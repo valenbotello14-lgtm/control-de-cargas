@@ -439,9 +439,11 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
     <div class="content" style="max-width:960px;margin:0 auto">
       <div class="toolbar mb20 no-print">
         <div class="chip active" data-ptab="sessions" onclick="playerTab('sessions')">Mi Semana</div>
+        <div class="chip" data-ptab="log" onclick="playerTab('log')">+ Registrar</div>
         <div class="chip" data-ptab="progress" onclick="playerTab('progress')">Mi Progreso</div>
       </div>
       <div id="player-tab-sessions"></div>
+      <div id="player-tab-log" style="display:none"></div>
       <div id="player-tab-progress" style="display:none"></div>
     </div>
   </div>
@@ -979,6 +981,7 @@ function buildProgressionSectionsHTML(athleteId, editable){
 function sourceBadge(source){
   if(source==='session') return '<span class="badge badge-bl">Sesión</span>';
   if(source==='daily-check') return '<span class="badge badge-ye">Chequeo del día</span>';
+  if(source==='self') return '<span class="badge badge-pu">Autogestión</span>';
   return '<span class="badge badge-gr">Test</span>';
 }
 function quickEstimate(athleteId, exerciseId){
@@ -1655,8 +1658,10 @@ function loginAsPlayer(athleteId){
 function playerTab(tab){
   document.querySelectorAll('#player-home .chip').forEach(c=>c.classList.toggle('active', c.dataset.ptab===tab));
   document.getElementById('player-tab-sessions').style.display = tab==='sessions' ? 'block' : 'none';
+  document.getElementById('player-tab-log').style.display = tab==='log' ? 'block' : 'none';
   document.getElementById('player-tab-progress').style.display = tab==='progress' ? 'block' : 'none';
   if(tab==='sessions') renderPlayerSessionsTab();
+  else if(tab==='log') renderPlayerLogTab();
   else renderPlayerProgressTab();
 }
 function renderPlayerSessionsTab(){
@@ -1682,7 +1687,7 @@ function renderPlayerWeekDetail(){
   const detail = document.getElementById('player-week-detail');
   if(!detail) return;
   const w = (db.weeks||[]).find(x=>x.id===playerSelectedWeekId);
-  if(!w){ detail.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Todavía no tenés sesiones</div><div class="empty-sub">Tu coach todavía no cargó ninguna sesión para vos.</div></div>`; return; }
+  if(!w){ detail.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Todavía no tenés sesiones</div><div class="empty-sub">Tu coach todavía no cargó ninguna sesión para vos. Mientras tanto podés registrar tus entrenamientos vos mismo en <b>"+ Registrar"</b>.</div></div>`; return; }
   detail.innerHTML = `
     <div class="flex justify-between items-center flex-wrap gap8 mb16">
       <div class="flex items-center gap10">
@@ -1698,6 +1703,85 @@ function renderPlayerWeekDetail(){
   const itemsEl = document.getElementById('player-items');
   itemsEl.innerHTML = (w.items||[]).map(it=>buildSessionItemHTML(w, it, 'pl')).join('') || `<div class="empty">Esta sesión no tiene ejercicios.</div>`;
   (w.items||[]).forEach(it=>updateItemSuggestion(w, it, 'pl'));
+}
+// Self-service logging: the athlete picks any exercise from the catalog and logs their
+// own weight × reps whenever they want, without needing the coach to have built a
+// session for it first. Saved with source 'self' so the coach can tell it apart.
+function renderPlayerLogTab(){
+  const el = document.getElementById('player-tab-log');
+  el.innerHTML = `
+    <div class="card" style="max-width:640px">
+      <div class="sec-title mb16">📝 Registrar mi entrenamiento</div>
+      <div class="small mb16">Elegí el ejercicio y cargá el peso y las repeticiones que hiciste — no hace falta que tu coach te arme la sesión primero.</div>
+      <div class="form-row c2 mb12">
+        <div class="form-group">
+          <label class="form-label">Ejercicio</label>
+          <select class="form-input form-select" id="plog-exercise" onchange="updatePlayerLogEstimate()"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha</label>
+          <input class="form-input" type="date" id="plog-date">
+        </div>
+      </div>
+      <div class="form-row c2 mb12">
+        <div class="form-group">
+          <label class="form-label" id="plog-weight-label">Peso levantado (kg)</label>
+          <input class="form-input" type="number" step="0.5" id="plog-weight" placeholder="100" oninput="updatePlayerLogEstimate()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Repeticiones</label>
+          <input class="form-input" type="number" min="1" max="15" id="plog-reps" placeholder="5" oninput="updatePlayerLogEstimate()">
+        </div>
+      </div>
+      <div class="form-group mb12">
+        <label class="form-label">Nota (opcional)</label>
+        <input class="form-input" id="plog-note" placeholder="Cómo te sentiste, RPE, contexto…">
+      </div>
+      <div class="rm-result" id="plog-result">
+        <div class="rm-result-num" id="plog-result-num">—</div>
+        <div class="rm-result-label">RM estimado</div>
+        <div class="rm-formula-note" id="plog-formula-note"></div>
+      </div>
+      <div class="flex justify-between items-center" style="margin-top:16px">
+        <label class="small flex items-center gap8"><input type="checkbox" id="plog-set-current" checked> Usar como mi RM de referencia</label>
+        <button class="btn btn-primary" onclick="savePlayerLog()">💾 Guardar</button>
+      </div>
+    </div>
+  `;
+  const sel = document.getElementById('plog-exercise');
+  sel.innerHTML = (db.exercises||[]).map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  document.getElementById('plog-date').value = todayISO();
+  updatePlayerLogEstimate();
+}
+function updatePlayerLogEstimate(){
+  const ex = getExercise(document.getElementById('plog-exercise').value);
+  const ath = getAthlete(playerAthleteId);
+  document.getElementById('plog-weight-label').textContent = ex && ex.bodyweightRelative ? 'Lastre agregado (kg)' : 'Peso levantado (kg)';
+  const w = Number(document.getElementById('plog-weight').value);
+  const r = Number(document.getElementById('plog-reps').value);
+  const resNum = document.getElementById('plog-result-num');
+  const resNote = document.getElementById('plog-formula-note');
+  if(!w || !r || r<1){ resNum.textContent = '—'; resNote.textContent=''; return; }
+  const tl = totalLoad(ath, ex, w);
+  const est = estimate1RM(tl, r, db.settings.formula);
+  resNum.textContent = est.toFixed(1)+' kg';
+  let extra = ex && ex.bodyweightRelative ? ` (peso corporal + lastre = ${tl.toFixed(1)} kg)` : '';
+  resNote.textContent = `Fórmula: ${formulaLabel(db.settings.formula)}${extra}${r>10?' · Con más de 10 reps la estimación pierde precisión':''}`;
+}
+function savePlayerLog(){
+  const exId = document.getElementById('plog-exercise').value;
+  const w = Number(document.getElementById('plog-weight').value);
+  const r = Number(document.getElementById('plog-reps').value);
+  if(!w || !r){ toast('Ingresá peso y repeticiones', true); return; }
+  const date = document.getElementById('plog-date').value || todayISO();
+  const note = document.getElementById('plog-note').value.trim();
+  const setCurrent = document.getElementById('plog-set-current').checked;
+  addRecord(playerAthleteId, exId, date, w, r, note, 'self', setCurrent);
+  toast('¡Guardado!');
+  document.getElementById('plog-weight').value = '';
+  document.getElementById('plog-reps').value = '';
+  document.getElementById('plog-note').value = '';
+  updatePlayerLogEstimate();
 }
 function renderPlayerProgressTab(){
   document.getElementById('player-tab-progress').innerHTML = `
