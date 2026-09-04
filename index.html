@@ -1902,9 +1902,15 @@ function renderPlayerProgressTab(){
    ═══════════════════════════════════════════════════════════════ */
 function init(){
   loadDB();
-  document.getElementById('app').style.display = 'flex';
   updateCoachBadge();
-  nav('dashboard');
+  // A link with ?jugador (e.g. .../?jugador) drops the visitor straight into Modo
+  // Jugador — for sharing with athletes so they never see the coach dashboard.
+  if(new URLSearchParams(window.location.search).has('jugador')){
+    enterPlayerMode();
+  }else{
+    document.getElementById('app').style.display = 'flex';
+    nav('dashboard');
+  }
 }
 init();
 </script>
