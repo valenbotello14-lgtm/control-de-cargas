@@ -216,6 +216,7 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
       <div class="sb-item" data-panel="exercises" onclick="nav('exercises')"><span class="sb-item-icon">🏋️</span><span>Ejercicios</span></div>
       <div class="sb-sec-label">Sistema</div>
       <div class="sb-item" data-panel="settings" onclick="nav('settings')"><span class="sb-item-icon">⚙️</span><span>Ajustes</span></div>
+      <div class="sb-item" onclick="enterPlayerMode()" style="color:var(--ac)"><span class="sb-item-icon">🔓</span><span>Modo Jugador</span></div>
     </div>
     <div class="sb-toggle" onclick="toggleSidebar()">◀</div>
   </div>
@@ -377,6 +378,15 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
           <button class="btn btn-primary" onclick="saveSettings()">Guardar</button>
         </div>
         <div class="card mb16" style="max-width:640px">
+          <div class="sec-title mb16">Modo Jugador</div>
+          <div class="small mb12">Los alumnos pueden entrar desde este mismo dispositivo (tablet/PC del gimnasio) tocando su nombre, para ver su semana, cargar su peso × reps y ver su progreso — sin poder editar ni ver datos de otros atletas. Cada atleta puede tener un PIN propio (se configura al editarlo en Atletas). Este PIN es opcional, solo para volver de Modo Jugador a este panel de coach.</div>
+          <div class="form-group mb12" style="max-width:220px">
+            <label class="form-label">PIN del coach (opcional)</label>
+            <input class="form-input" type="text" inputmode="numeric" maxlength="8" id="set-coach-pin" placeholder="Ej: 1234">
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">Guardar</button>
+        </div>
+        <div class="card mb16" style="max-width:640px">
           <div class="sec-title mb16">Respaldo de Datos</div>
           <div class="small mb12">Todo se guarda en este navegador (localStorage). No hay servidor: exportá seguido para no perder información si cambiás de dispositivo o borrás el caché.</div>
           <div class="flex gap10 flex-wrap">
@@ -392,6 +402,61 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
   </div>
 </div>
 
+<!-- ══ PLAYER MODE SHELL ══ -->
+<div id="player-shell" style="display:none">
+
+  <!-- Gate: pick your name -->
+  <div id="player-gate" style="min-height:100vh;background:var(--dk);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:34px;margin-bottom:8px">🏋️</div>
+      <div style="font-size:20px;font-weight:800">¿Quién sos?</div>
+      <div class="small">Tocá tu nombre para ver tu semana y cargar tus datos</div>
+    </div>
+    <div class="g-auto" id="player-gate-grid" style="max-width:760px;width:100%"></div>
+    <div style="margin-top:34px">
+      <button class="btn btn-ghost btn-sm" onclick="exitToCoach()">🔒 Modo Coach</button>
+    </div>
+  </div>
+
+  <!-- Logged-in player home -->
+  <div id="player-home" style="display:none;min-height:100vh;background:var(--dk)">
+    <div class="topbar" style="padding:0 18px">
+      <div class="flex items-center gap10">
+        <div class="ath-avatar" id="player-avatar" style="width:36px;height:36px;font-size:14px"></div>
+        <div>
+          <div style="font-weight:700;font-size:14px" id="player-name"></div>
+          <div class="small" id="player-meta"></div>
+        </div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <button class="btn btn-ghost btn-sm no-print" onclick="renderPlayerGate()">↩ Cambiar de jugador</button>
+    </div>
+    <div class="content" style="max-width:960px;margin:0 auto">
+      <div class="toolbar mb20 no-print">
+        <div class="chip active" data-ptab="sessions" onclick="playerTab('sessions')">Mi Semana</div>
+        <div class="chip" data-ptab="progress" onclick="playerTab('progress')">Mi Progreso</div>
+      </div>
+      <div id="player-tab-sessions"></div>
+      <div id="player-tab-progress" style="display:none"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ PIN MODAL ══ -->
+<div class="modal-overlay" id="pin-modal" style="display:none" onclick="closeModal(event,'pin-modal')">
+<div class="modal" style="max-width:320px" onclick="event.stopPropagation()">
+  <div class="modal-hd"><div class="modal-title" id="pin-modal-title">Ingresá tu PIN</div><div class="modal-close" onclick="closeModal(null,'pin-modal')">✕</div></div>
+  <div class="form-group mb16">
+    <input class="form-input" type="password" inputmode="numeric" id="pin-input" placeholder="••••" style="text-align:center;font-size:20px;letter-spacing:6px" onkeydown="if(event.key==='Enter')confirmPin()">
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeModal(null,'pin-modal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="confirmPin()">Ingresar</button>
+  </div>
+</div>
+</div>
+
 <!-- ══ ATHLETE MODAL ══ -->
 <div class="modal-overlay" id="athlete-modal" style="display:none" onclick="closeModal(event,'athlete-modal')">
 <div class="modal" onclick="event.stopPropagation()">
@@ -404,6 +469,11 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
     <div class="form-group"><label class="form-label">Peso corporal (kg)</label><input class="form-input" type="number" step="0.1" id="ath-bw" placeholder="78.0"></div>
     <div class="form-group"><label class="form-label">Deporte</label><input class="form-input" id="ath-sport" placeholder="Rugby, fútbol…"></div>
     <div class="form-group"><label class="form-label">Próximo partido</label><input class="form-input" type="date" id="ath-match"></div>
+  </div>
+  <div class="form-group mb12" style="max-width:200px">
+    <label class="form-label">PIN de Modo Jugador (opcional)</label>
+    <input class="form-input" type="text" inputmode="numeric" maxlength="8" id="ath-pin" placeholder="Ej: 1234">
+    <div class="form-hint">Si lo cargás, el atleta lo va a tener que ingresar para entrar a ver/cargar sus propios datos desde Modo Jugador.</div>
   </div>
   <div class="form-group mb12">
     <label class="form-label">Notas</label>
@@ -524,7 +594,7 @@ const DEFAULT_EXERCISES = [
 function defaultDB(){
   return {
     version: 1,
-    settings: { coachName:'', org:'', formula:'epley' },
+    settings: { coachName:'', org:'', formula:'epley', coachPin:'' },
     athletes: [],
     exercises: DEFAULT_EXERCISES.map(e=>Object.assign({},e)),
     records: [],       // {id, athleteId, exerciseId, date, load, reps, current, source, note}
@@ -765,6 +835,7 @@ function openAthleteModal(id){
   document.getElementById('ath-bw').value = a?a.bodyweight||'':'';
   document.getElementById('ath-sport').value = a?a.sport||'':'';
   document.getElementById('ath-match').value = a?a.nextMatch||'':'';
+  document.getElementById('ath-pin').value = a?a.pin||'':'';
   document.getElementById('ath-notes').value = a?a.notes||'':'';
   document.getElementById('athlete-modal').style.display = 'flex';
 }
@@ -777,6 +848,7 @@ function saveAthlete(){
     bodyweight: Number(document.getElementById('ath-bw').value)||0,
     sport: document.getElementById('ath-sport').value.trim(),
     nextMatch: document.getElementById('ath-match').value,
+    pin: document.getElementById('ath-pin').value.trim(),
     notes: document.getElementById('ath-notes').value.trim(),
   };
   if(editingAthleteId){
@@ -854,9 +926,15 @@ function renderAthleteProfile(id){
       <div id="ath-profile-exercises"></div>
     </div>
   `;
-  const exercisesEl = document.getElementById('ath-profile-exercises');
-  exercisesEl.innerHTML = exs.map(ex=>{
-    const recs = (db.records||[]).filter(r=>r.athleteId===a.id && r.exerciseId===ex.id).sort((x,y)=>new Date(x.date)-new Date(y.date));
+  document.getElementById('ath-profile-exercises').innerHTML = buildProgressionSectionsHTML(a.id, true);
+}
+// Per-exercise weight × reps progression cards, reused by the coach's athlete
+// profile (editable) and the player's "Mi Progreso" tab (read-only).
+function buildProgressionSectionsHTML(athleteId, editable){
+  const a = getAthlete(athleteId);
+  if(!a) return '';
+  return (db.exercises||[]).map(ex=>{
+    const recs = (db.records||[]).filter(r=>r.athleteId===athleteId && r.exerciseId===ex.id).sort((x,y)=>new Date(x.date)-new Date(y.date));
     let prevEst = null;
     const rows = recs.map(r=>{
       const est = recEstTotal(r);
@@ -875,20 +953,20 @@ function renderAthleteProfile(id){
         <td>${sourceBadge(r.source)}</td>
         <td>${r.current?'<span class="badge badge-ac">Referencia</span>':''}</td>
         <td class="small">${esc(r.note||'')}</td>
-        <td>
-          ${!r.current?`<button class="btn btn-ghost btn-sm" onclick="setCurrentRecord('${r.id}');renderAthleteProfile('${a.id}')">Marcar referencia</button>`:''}
-          <button class="btn btn-ghost btn-sm btn-danger" onclick="deleteRecord('${r.id}','${a.id}')">✕</button>
-        </td>
+        ${editable?`<td>
+          ${!r.current?`<button class="btn btn-ghost btn-sm" onclick="setCurrentRecord('${r.id}');renderAthleteProfile('${athleteId}')">Marcar referencia</button>`:''}
+          <button class="btn btn-ghost btn-sm btn-danger" onclick="deleteRecord('${r.id}','${athleteId}')">✕</button>
+        </td>`:''}
       </tr>`;
     }).join('');
     return `<div class="card mb12">
       <div class="flex justify-between items-center mb10">
         <div style="font-weight:700;font-size:13.5px">${esc(ex.name)}</div>
-        <button class="btn btn-ghost btn-sm" onclick="quickEstimate('${a.id}','${ex.id}')">+ Registrar peso × reps</button>
+        ${editable?`<button class="btn btn-ghost btn-sm" onclick="quickEstimate('${athleteId}','${ex.id}')">+ Registrar peso × reps</button>`:''}
       </div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Fecha</th><th>Peso × Reps</th><th>RM estimado</th><th>Variación</th><th>Origen</th><th></th><th>Nota</th><th></th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="8" class="empty">Sin registros todavía para este ejercicio</td></tr>`}</tbody>
+        <thead><tr><th>Fecha</th><th>Peso × Reps</th><th>RM estimado</th><th>Variación</th><th>Origen</th><th></th><th>Nota</th>${editable?'<th></th>':''}</tr></thead>
+        <tbody>${rows || `<tr><td colspan="${editable?8:7}" class="empty">Sin registros todavía para este ejercicio</td></tr>`}</tbody>
       </table></div>
     </div>`;
   }).join('');
@@ -1161,7 +1239,7 @@ function selectAthleteWeek(athleteId){
   if(!listEl) return;
   const weeks = (db.weeks||[]).filter(w=>w.athleteId===athleteId).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
   listEl.innerHTML = weeks.length ? weeks.map(w=>`
-    <div class="chip" style="display:flex;justify-content:space-between;width:100%;margin-bottom:6px;${selectedWeekId===w.id?'background:var(--aca);border-color:var(--ac);color:var(--ac)':''}" onclick="selectWeek('${w.id}')">
+    <div class="chip no-print" style="display:flex;justify-content:space-between;width:100%;margin-bottom:6px;${selectedWeekId===w.id?'background:var(--aca);border-color:var(--ac);color:var(--ac)':''}" onclick="selectWeek('${w.id}')">
       <span>${esc(w.label)}</span><span class="small">${fmtDate(w.startDate)}</span>
     </div>
   `).join('') : `<div class="small">Sin sesiones para este atleta todavía</div>`;
@@ -1192,10 +1270,17 @@ function renderWeekDetail(){
     <div id="aw-items"></div>
   `;
   const itemsEl = document.getElementById('aw-items');
-  itemsEl.innerHTML = (w.items||[]).map(it=>{
-    const ex = getExercise(it.exerciseId);
-    const unitLabel = ex && ex.bodyweightRelative ? 'kg de lastre' : 'kg';
-    return `<div class="plan-item">
+  itemsEl.innerHTML = (w.items||[]).map(it=>buildSessionItemHTML(w, it, 'aw')).join('') || `<div class="empty">Esta sesión no tiene ejercicios.</div>`;
+  (w.items||[]).forEach(it=>updateItemSuggestion(w, it, 'aw'));
+}
+// One exercise block: daily check + suggested weight + actual log. `prefix` namespaces
+// the element ids ('aw' = coach's Planning panel, 'pl' = player's own session view) so
+// the coach's and a logged-in player's views can coexist in the DOM without id clashes,
+// since only one is hidden via CSS, not removed.
+function buildSessionItemHTML(w, it, prefix){
+  const ex = getExercise(it.exerciseId);
+  const unitLabel = ex && ex.bodyweightRelative ? 'kg de lastre' : 'kg';
+  return `<div class="plan-item">
       <div class="plan-item-hd">
         <div class="plan-ex-name">${esc(ex?ex.name:'Ejercicio eliminado')}</div>
         <span class="badge badge-gr">${it.pct}% de 1RM</span>
@@ -1207,28 +1292,26 @@ function renderWeekDetail(){
       <div class="card no-print" style="background:var(--dk3);border-color:var(--bdr2);padding:12px 14px;margin-bottom:10px">
         <div class="small mb8" style="color:var(--g2)">🎯 Chequeo del día — el RM cambia de un día a otro. Una serie de aproximación antes de ir a la carga de trabajo ajusta el % a como está el atleta HOY, no a un test de hace semanas.</div>
         <div class="flex items-end gap8 flex-wrap">
-          <div class="form-group" style="width:130px"><label class="form-label">Peso (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="aw-check-load-${it.id}" value="${it.checkLoad!=null?it.checkLoad:''}" oninput="onCheckInput('${w.id}','${it.id}')"></div>
-          <div class="form-group" style="width:90px"><label class="form-label">Reps</label><input class="form-input" type="number" id="aw-check-reps-${it.id}" value="${it.checkReps!=null?it.checkReps:''}" oninput="onCheckInput('${w.id}','${it.id}')"></div>
-          <button class="btn btn-ghost btn-sm" onclick="saveDailyCheck('${w.id}','${it.id}')">💾 Guardar chequeo</button>
+          <div class="form-group" style="width:130px"><label class="form-label">Peso (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="${prefix}-check-load-${it.id}" value="${it.checkLoad!=null?it.checkLoad:''}" oninput="onCheckInput('${w.id}','${it.id}','${prefix}')"></div>
+          <div class="form-group" style="width:90px"><label class="form-label">Reps</label><input class="form-input" type="number" id="${prefix}-check-reps-${it.id}" value="${it.checkReps!=null?it.checkReps:''}" oninput="onCheckInput('${w.id}','${it.id}','${prefix}')"></div>
+          <button class="btn btn-ghost btn-sm" onclick="saveDailyCheck('${w.id}','${it.id}','${prefix}')">💾 Guardar chequeo</button>
         </div>
-        <div id="aw-check-preview-${it.id}" class="small" style="margin-top:8px"></div>
+        <div id="${prefix}-check-preview-${it.id}" class="small" style="margin-top:8px"></div>
       </div>
-      <div class="plan-suggest" id="aw-suggest-${it.id}"></div>
+      <div class="plan-suggest" id="${prefix}-suggest-${it.id}"></div>
       <div class="plan-actual-row no-print">
-        <div class="form-group"><label class="form-label">Real (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="aw-actual-load-${it.id}" value="${it.actualLoad!=null?it.actualLoad:''}"></div>
-        <div class="form-group"><label class="form-label">Reps logradas</label><input class="form-input" type="number" id="aw-actual-reps-${it.id}" value="${it.actualReps!=null?it.actualReps:''}"></div>
-        <div class="form-group" style="width:80px"><label class="form-label">RPE</label><input class="form-input" type="number" min="1" max="10" id="aw-actual-rpe-${it.id}" value="${it.actualRpe!=null?it.actualRpe:''}"></div>
-        <div class="form-group" style="width:160px"><label class="form-label">Nota</label><input class="form-input" id="aw-actual-note-${it.id}" value="${esc(it.actualNote||'')}"></div>
-        <button class="btn btn-primary btn-sm" onclick="logActual('${w.id}','${it.id}')">💾 Guardar</button>
+        <div class="form-group"><label class="form-label">Real (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="${prefix}-actual-load-${it.id}" value="${it.actualLoad!=null?it.actualLoad:''}"></div>
+        <div class="form-group"><label class="form-label">Reps logradas</label><input class="form-input" type="number" id="${prefix}-actual-reps-${it.id}" value="${it.actualReps!=null?it.actualReps:''}"></div>
+        <div class="form-group" style="width:80px"><label class="form-label">RPE</label><input class="form-input" type="number" min="1" max="10" id="${prefix}-actual-rpe-${it.id}" value="${it.actualRpe!=null?it.actualRpe:''}"></div>
+        <div class="form-group" style="width:160px"><label class="form-label">Nota</label><input class="form-input" id="${prefix}-actual-note-${it.id}" value="${esc(it.actualNote||'')}"></div>
+        <button class="btn btn-primary btn-sm" onclick="logActual('${w.id}','${it.id}','${prefix}')">💾 Guardar</button>
         ${it.loggedAt?`<span class="small">✓ Registrado ${fmtDate(it.loggedAt)}</span>`:''}
       </div>
     </div>`;
-  }).join('') || `<div class="empty">Esta sesión no tiene ejercicios.</div>`;
-  (w.items||[]).forEach(it=>updateItemSuggestion(w, it));
 }
 // Recomputes and injects the suggested weight + daily-check preview for one exercise block,
 // without re-rendering the whole session (keeps focus in the check inputs while typing).
-function updateItemSuggestion(w, it){
+function updateItemSuggestion(w, it, prefix){
   const ath = getAthlete(w.athleteId), ex = getExercise(it.exerciseId);
   const unitLabel = ex && ex.bodyweightRelative ? 'kg de lastre' : 'kg';
   const refRM = getCurrentTotalRM(w.athleteId, it.exerciseId);
@@ -1236,7 +1319,7 @@ function updateItemSuggestion(w, it){
   if(it.checkLoad && it.checkReps) checkRM = estimate1RM(totalLoad(ath, ex, it.checkLoad), it.checkReps, db.settings.formula);
   const effectiveRM = checkRM!=null ? checkRM : refRM;
 
-  const suggestEl = document.getElementById('aw-suggest-'+it.id);
+  const suggestEl = document.getElementById(prefix+'-suggest-'+it.id);
   if(suggestEl){
     const suggested = effectiveRM!=null ? loadFromTotal(ath, ex, effectiveRM*(it.pct/100), ex?ex.increment:2.5) : null;
     suggestEl.innerHTML = `
@@ -1244,7 +1327,7 @@ function updateItemSuggestion(w, it){
       <div class="plan-suggest-label">Peso sugerido · ${it.pct}% ${checkRM!=null?'del RM de hoy':'del RM de referencia'}</div>
     `;
   }
-  const prevEl = document.getElementById('aw-check-preview-'+it.id);
+  const prevEl = document.getElementById(prefix+'-check-preview-'+it.id);
   if(prevEl){
     if(checkRM!=null){
       let deltaTxt = '';
@@ -1263,21 +1346,21 @@ function updateItemSuggestion(w, it){
     }
   }
 }
-function onCheckInput(weekId, itemId){
+function onCheckInput(weekId, itemId, prefix){
   const w = db.weeks.find(x=>x.id===weekId); if(!w) return;
   const it = w.items.find(x=>x.id===itemId); if(!it) return;
-  const loadVal = document.getElementById('aw-check-load-'+itemId).value;
-  const repsVal = document.getElementById('aw-check-reps-'+itemId).value;
+  const loadVal = document.getElementById(prefix+'-check-load-'+itemId).value;
+  const repsVal = document.getElementById(prefix+'-check-reps-'+itemId).value;
   it.checkLoad = loadVal===''?null:Number(loadVal);
   it.checkReps = repsVal===''?null:Number(repsVal);
   saveDB();
-  updateItemSuggestion(w, it);
+  updateItemSuggestion(w, it, prefix);
 }
-function saveDailyCheck(weekId, itemId){
+function saveDailyCheck(weekId, itemId, prefix){
   const w = db.weeks.find(x=>x.id===weekId); if(!w) return;
   const it = w.items.find(x=>x.id===itemId); if(!it) return;
-  const load = Number(document.getElementById('aw-check-load-'+itemId).value);
-  const reps = Number(document.getElementById('aw-check-reps-'+itemId).value);
+  const load = Number(document.getElementById(prefix+'-check-load-'+itemId).value);
+  const reps = Number(document.getElementById(prefix+'-check-reps-'+itemId).value);
   if(!load || !reps){ toast('Ingresá peso y reps del chequeo', true); return; }
   it.checkLoad = load; it.checkReps = reps;
   saveDB();
@@ -1290,17 +1373,17 @@ function saveDailyCheck(weekId, itemId){
   );
   addRecord(w.athleteId, it.exerciseId, w.startDate, load, reps, 'Chequeo del día antes de la sesión', 'daily-check', askUpdate);
   toast('Chequeo guardado');
-  updateItemSuggestion(w, it);
+  updateItemSuggestion(w, it, prefix);
 }
-function logActual(weekId, itemId){
+function logActual(weekId, itemId, prefix){
   const w = db.weeks.find(x=>x.id===weekId);
   if(!w) return;
   const it = w.items.find(x=>x.id===itemId);
   if(!it) return;
-  const load = Number(document.getElementById('aw-actual-load-'+itemId).value);
-  const reps = Number(document.getElementById('aw-actual-reps-'+itemId).value);
-  const rpe = document.getElementById('aw-actual-rpe-'+itemId).value;
-  const note = document.getElementById('aw-actual-note-'+itemId).value.trim();
+  const load = Number(document.getElementById(prefix+'-actual-load-'+itemId).value);
+  const reps = Number(document.getElementById(prefix+'-actual-reps-'+itemId).value);
+  const rpe = document.getElementById(prefix+'-actual-rpe-'+itemId).value;
+  const note = document.getElementById(prefix+'-actual-note-'+itemId).value.trim();
   if(!load || !reps){ toast('Ingresá peso real y repeticiones', true); return; }
   it.actualLoad = load; it.actualReps = reps; it.actualRpe = rpe===''?null:Number(rpe); it.actualNote = note; it.loggedAt = todayISO();
   saveDB();
@@ -1312,7 +1395,7 @@ function logActual(weekId, itemId){
   const fullNote = [note, it.actualRpe!=null?('RPE '+it.actualRpe):''].filter(Boolean).join(' · ') || 'Registrado desde la sesión';
   addRecord(w.athleteId, it.exerciseId, w.startDate, load, reps, fullNote, 'session', setCurrent);
   toast(setCurrent ? 'Guardado — nuevo RM de referencia: '+newEst.toFixed(1)+' kg' : 'Guardado');
-  renderWeekDetail();
+  if(prefix==='pl') renderPlayerWeekDetail(); else renderWeekDetail();
 }
 function deleteWeek(id){
   if(!confirm('¿Eliminar esta sesión?')) return;
@@ -1413,11 +1496,13 @@ function renderSettings(){
   document.getElementById('set-coach-name').value = db.settings.coachName||'';
   document.getElementById('set-org').value = db.settings.org||'';
   document.getElementById('set-formula').value = db.settings.formula||'epley';
+  document.getElementById('set-coach-pin').value = db.settings.coachPin||'';
 }
 function saveSettings(){
   db.settings.coachName = document.getElementById('set-coach-name').value.trim();
   db.settings.org = document.getElementById('set-org').value.trim();
   db.settings.formula = document.getElementById('set-formula').value;
+  db.settings.coachPin = document.getElementById('set-coach-pin').value.trim();
   saveDB();
   updateCoachBadge();
   toast('Ajustes guardados');
@@ -1464,6 +1549,156 @@ function resetData(){
   saveDB();
   toast('Datos borrados');
   nav('dashboard');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PLAYER MODE — same device, each athlete taps their own name (with
+   an optional per-athlete PIN) to see their week, log their own
+   weight × reps, and check their progress. Everything here is a
+   read/log-only view over the same data the coach manages; a player
+   can never edit other athletes, exercises, or presets.
+   ═══════════════════════════════════════════════════════════════ */
+let appMode = 'coach'; // 'coach' | 'player'
+let playerAthleteId = null;
+let playerSelectedWeekId = null;
+let pendingPinAction = null; // {type:'athlete', athleteId} | {type:'coach'}
+
+function enterPlayerMode(){
+  appMode = 'player';
+  playerAthleteId = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('player-shell').style.display = 'block';
+  renderPlayerGate();
+}
+function renderPlayerGate(){
+  document.getElementById('player-home').style.display = 'none';
+  document.getElementById('player-gate').style.display = 'flex';
+  playerAthleteId = null;
+  const grid = document.getElementById('player-gate-grid');
+  const aths = db.athletes||[];
+  grid.innerHTML = aths.length ? aths.map(a=>`
+    <div class="ath-card" style="text-align:center" onclick="loginPlayerAttempt('${a.id}')">
+      <div class="ath-avatar" style="width:52px;height:52px;font-size:18px;margin:0 auto 10px">${((a.firstName||' ')[0]+(a.lastName||' ')[0]).toUpperCase()}</div>
+      <div class="ath-name">${esc(athleteName(a))}</div>
+      <div class="ath-meta">${esc(a.sport||'')}${a.pin?' 🔒':''}</div>
+    </div>
+  `).join('') : `<div class="empty" style="grid-column:1/-1">Todavía no hay atletas cargados. Pedile al coach que te agregue primero.</div>`;
+}
+function loginPlayerAttempt(athleteId){
+  const a = getAthlete(athleteId);
+  if(!a) return;
+  if(a.pin){
+    pendingPinAction = {type:'athlete', athleteId};
+    openPinModal('PIN de '+a.firstName);
+  }else{
+    loginAsPlayer(athleteId);
+  }
+}
+function exitToCoach(){
+  if(db.settings.coachPin){
+    pendingPinAction = {type:'coach'};
+    openPinModal('PIN del Coach');
+  }else{
+    doExitToCoach();
+  }
+}
+function openPinModal(title){
+  document.getElementById('pin-modal-title').textContent = title;
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-modal').style.display = 'flex';
+  setTimeout(()=>{ const el=document.getElementById('pin-input'); if(el) el.focus(); }, 50);
+}
+function confirmPin(){
+  const val = document.getElementById('pin-input').value.trim();
+  if(!pendingPinAction) return;
+  if(pendingPinAction.type==='athlete'){
+    const a = getAthlete(pendingPinAction.athleteId);
+    if(a && val!=='' && val===String(a.pin)){
+      document.getElementById('pin-modal').style.display = 'none';
+      loginAsPlayer(a.id);
+    }else{
+      toast('PIN incorrecto', true);
+    }
+  }else if(pendingPinAction.type==='coach'){
+    if(val!=='' && val===String(db.settings.coachPin)){
+      document.getElementById('pin-modal').style.display = 'none';
+      doExitToCoach();
+    }else{
+      toast('PIN incorrecto', true);
+    }
+  }
+}
+function doExitToCoach(){
+  appMode = 'coach';
+  playerAthleteId = null;
+  document.getElementById('player-shell').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  nav('dashboard');
+}
+function loginAsPlayer(athleteId){
+  playerAthleteId = athleteId;
+  const a = getAthlete(athleteId);
+  document.getElementById('player-gate').style.display = 'none';
+  document.getElementById('player-home').style.display = 'block';
+  document.getElementById('player-avatar').textContent = ((a.firstName||' ')[0]+(a.lastName||' ')[0]).toUpperCase();
+  document.getElementById('player-name').textContent = athleteName(a);
+  const daysToMatch = a.nextMatch ? Math.ceil((new Date(a.nextMatch)-new Date(todayISO()))/86400000) : null;
+  document.getElementById('player-meta').textContent = [a.sport, a.bodyweight?a.bodyweight+' kg':null, daysToMatch!=null?('Partido en '+daysToMatch+' días'):null].filter(Boolean).join(' · ');
+  playerSelectedWeekId = null;
+  playerTab('sessions');
+}
+function playerTab(tab){
+  document.querySelectorAll('#player-home .chip').forEach(c=>c.classList.toggle('active', c.dataset.ptab===tab));
+  document.getElementById('player-tab-sessions').style.display = tab==='sessions' ? 'block' : 'none';
+  document.getElementById('player-tab-progress').style.display = tab==='progress' ? 'block' : 'none';
+  if(tab==='sessions') renderPlayerSessionsTab();
+  else renderPlayerProgressTab();
+}
+function renderPlayerSessionsTab(){
+  const el = document.getElementById('player-tab-sessions');
+  el.innerHTML = `
+    <div class="flex gap16 flex-wrap" style="align-items:flex-start">
+      <div style="min-width:200px" id="player-weeks-list"></div>
+      <div style="flex:1;min-width:280px" id="player-week-detail"></div>
+    </div>`;
+  const weeks = (db.weeks||[]).filter(w=>w.athleteId===playerAthleteId).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
+  const listEl = document.getElementById('player-weeks-list');
+  listEl.innerHTML = weeks.length ? weeks.map(w=>`
+    <div class="chip no-print" style="display:flex;justify-content:space-between;width:100%;margin-bottom:6px;${playerSelectedWeekId===w.id?'background:var(--aca);border-color:var(--ac);color:var(--ac)':''}" onclick="selectPlayerWeek('${w.id}')">
+      <span>${esc(w.label)}</span><span class="small">${fmtDate(w.startDate)}</span>
+    </div>
+  `).join('') : `<div class="small">Todavía no tenés sesiones cargadas.</div>`;
+  if(weeks.length && !weeks.find(w=>w.id===playerSelectedWeekId)) playerSelectedWeekId = weeks[0].id;
+  if(!weeks.length) playerSelectedWeekId = null;
+  renderPlayerWeekDetail();
+}
+function selectPlayerWeek(id){ playerSelectedWeekId = id; renderPlayerSessionsTab(); }
+function renderPlayerWeekDetail(){
+  const detail = document.getElementById('player-week-detail');
+  if(!detail) return;
+  const w = (db.weeks||[]).find(x=>x.id===playerSelectedWeekId);
+  if(!w){ detail.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Todavía no tenés sesiones</div><div class="empty-sub">Tu coach todavía no cargó ninguna sesión para vos.</div></div>`; return; }
+  detail.innerHTML = `
+    <div class="flex justify-between items-center flex-wrap gap8 mb16">
+      <div class="flex items-center gap10">
+        <div style="font-weight:700;font-size:15px">${esc(w.label)}</div>
+        <span class="badge ${PHASE_COLORS[w.phase]||'badge-gr'}">${PHASE_LABELS[w.phase]||w.phase}</span>
+        <span class="small">${fmtDate(w.startDate)}</span>
+      </div>
+      <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Imprimir</button>
+    </div>
+    ${w.notes?`<div class="small mb16">📝 ${esc(w.notes)}</div>`:''}
+    <div id="player-items"></div>
+  `;
+  const itemsEl = document.getElementById('player-items');
+  itemsEl.innerHTML = (w.items||[]).map(it=>buildSessionItemHTML(w, it, 'pl')).join('') || `<div class="empty">Esta sesión no tiene ejercicios.</div>`;
+  (w.items||[]).forEach(it=>updateItemSuggestion(w, it, 'pl'));
+}
+function renderPlayerProgressTab(){
+  document.getElementById('player-tab-progress').innerHTML = `
+    <div class="small mb16">Cómo fue evolucionando tu peso × repeticiones en cada ejercicio, sesión a sesión.</div>
+    ${buildProgressionSectionsHTML(playerAthleteId, false)}
+  `;
 }
 
 /* ═══════════════════════════════════════════════════════════════

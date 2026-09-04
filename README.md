@@ -16,7 +16,12 @@ Es un **único archivo HTML autocontenido** (sin backend, sin instalación): los
   - Después de la serie de trabajo cargás lo que realmente levantó (peso × reps × RPE) y el sistema decide si conviene **actualizar el RM de referencia**.
   - Vista imprimible (🖨) para llevar la planilla al gimnasio.
 - **Historial**: todos los registros de RM por atleta/ejercicio (tests, chequeos del día y sesiones) con gráfico de progresión.
-- **Ajustes**: fórmula de cálculo, y **exportar/importar backup en JSON** (recomendado hacerlo seguido, ya que los datos viven solo en este navegador).
+- **Modo Jugador**: desde el mismo dispositivo (la tablet/PC del gimnasio), cada alumno toca su nombre y entra a su propia vista — sin ver ni tocar datos de otros atletas. Ahí puede:
+  - ver **su semana** (sesiones anteriores y la actual, con el %1RM de cada ejercicio),
+  - hacer su propio **chequeo del día** y cargar lo que realmente levantó (peso × reps × RPE),
+  - ver **su progreso** semana a semana por ejercicio.
+  Cada atleta puede tener un PIN propio (opcional, se configura al editarlo). Volver de Modo Jugador al panel del coach puede protegerse con un PIN del coach (Ajustes).
+- **Ajustes**: fórmula de cálculo, PIN del coach, y **exportar/importar backup en JSON** (recomendado hacerlo seguido, ya que los datos viven solo en este navegador).
 
 ## Uso rápido
 
@@ -26,6 +31,7 @@ Es un **único archivo HTML autocontenido** (sin backend, sin instalación): los
 4. En **Planificación → Sesiones del atleta**, creá una sesión para ese alumno (podés partir de un preset de %1RM/series/reps o armarla en blanco).
 5. Antes de la serie de trabajo, hacé el **chequeo del día** — la app ajusta el peso sugerido a cómo está hoy.
 6. Después de entrenar, cargá lo realmente levantado (peso × reps × RPE): queda guardado en la progresión de ese ejercicio y, si corresponde, actualiza el RM de referencia.
+7. Si querés que el alumno cargue sus propios datos, tocá **Modo Jugador** en el menú — el alumno entra con su nombre (y su PIN, si le pusiste uno) desde el mismo dispositivo.
 
 ## Publicar con GitHub Pages (opcional)
 
