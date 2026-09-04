@@ -162,18 +162,6 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 .rm-result-label{font-size:10.5px;color:var(--g3);text-transform:uppercase;letter-spacing:.7px;margin-top:2px}
 .rm-formula-note{font-size:10.5px;color:var(--g4);margin-top:8px}
 
-/* ══ PLAN GRID ═══════════════════════════════════════════════ */
-.plan-item{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r12);padding:14px 16px;margin-bottom:10px}
-.plan-item-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
-.plan-ex-name{font-family:var(--fd);font-weight:700;font-size:16px}
-.plan-sub{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--g2);margin-bottom:10px}
-.plan-sub b{color:var(--w)}
-.plan-suggest{background:var(--aca);border:1px solid var(--ac);border-radius:var(--r8);padding:10px 14px;display:inline-flex;flex-direction:column;gap:1px;margin-bottom:10px}
-.plan-suggest-kg{font-family:var(--fd);font-size:24px;font-weight:800;color:var(--ac)}
-.plan-suggest-label{font-size:9.5px;color:var(--ac);text-transform:uppercase;letter-spacing:.6px;opacity:.85}
-.plan-actual-row{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
-.plan-actual-row .form-group{width:110px}
-
 /* ══ EMPTY STATE ═════════════════════════════════════════════ */
 .empty{text-align:center;padding:50px 20px;color:var(--g3)}
 .empty-icon{font-size:34px;margin-bottom:10px;opacity:.5}
@@ -190,7 +178,6 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 .small{font-size:11px;color:var(--g3)}
 .mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}.mb20{margin-bottom:20px}
 .flex{display:flex}.gap8{gap:8px}.gap10{gap:10px}.gap12{gap:12px}.items-center{align-items:center}.justify-between{justify-content:space-between}.flex-wrap{flex-wrap:wrap}
-.tag-phase{padding:2px 8px;border-radius:5px;font-size:9.5px;font-weight:700;text-transform:uppercase}
 
 @media(max-width:900px){
   .sidebar{position:fixed;z-index:60;top:0;left:0;height:100%;width:250px;min-width:250px;transform:translateX(-100%);transition:transform .25s}
@@ -213,9 +200,7 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
   .app{display:block;height:auto}
   .content{overflow:visible;padding:0}
   .print-sheet{display:block!important}
-  .card,.plan-item{background:#fff;border:1px solid #999;color:#000;break-inside:avoid}
-  .plan-suggest{background:#eee;border-color:#999}
-  .plan-suggest-kg,.plan-ex-name{color:#000}
+  .card{background:#fff;border:1px solid #999;color:#000;break-inside:avoid}
   th{background:#eee;color:#333}
 }
 </style>
@@ -265,7 +250,6 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
       <div class="sb-item" data-panel="athletes" onclick="nav('athletes')"><span class="sb-item-icon">👤</span><span>Atletas</span></div>
       <div class="sb-sec-label">Fuerza</div>
       <div class="sb-item" data-panel="estimate" onclick="nav('estimate')"><span class="sb-item-icon">🎯</span><span>Estimar RM</span></div>
-      <div class="sb-item" data-panel="planning" onclick="nav('planning')"><span class="sb-item-icon">📅</span><span>Planificación</span></div>
       <div class="sb-item" data-panel="history" onclick="nav('history')"><span class="sb-item-icon">📈</span><span>Historial</span></div>
       <div class="sb-item" data-panel="exercises" onclick="nav('exercises')"><span class="sb-item-icon">🏋️</span><span>Ejercicios</span></div>
       <div class="sb-sec-label">Sistema</div>
@@ -366,18 +350,6 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
             <button class="btn btn-primary" onclick="saveEstimate()">💾 Guardar registro</button>
           </div>
         </div>
-      </div>
-
-      <!-- PLANNING -->
-      <div class="panel" id="panel-planning">
-        <div class="sec-hd">
-          <div class="toolbar">
-            <div class="chip active" data-tab="templates" onclick="planTab('templates')">Presets de sesión</div>
-            <div class="chip" data-tab="athlete-weeks" onclick="planTab('athlete-weeks')">Sesiones del atleta</div>
-          </div>
-        </div>
-        <div id="plan-templates-view"></div>
-        <div id="plan-athlete-weeks-view" style="display:none"></div>
       </div>
 
       <!-- HISTORY -->
@@ -488,12 +460,10 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
     </div>
     <div class="content" style="max-width:960px;margin:0 auto">
       <div class="toolbar mb20 no-print">
-        <div class="chip active" data-ptab="sessions" onclick="playerTab('sessions')">Mi Semana</div>
-        <div class="chip" data-ptab="log" onclick="playerTab('log')">+ Registrar</div>
+        <div class="chip active" data-ptab="log" onclick="playerTab('log')">+ Registrar</div>
         <div class="chip" data-ptab="progress" onclick="playerTab('progress')">Mi Progreso</div>
       </div>
-      <div id="player-tab-sessions"></div>
-      <div id="player-tab-log" style="display:none"></div>
+      <div id="player-tab-log"></div>
       <div id="player-tab-progress" style="display:none"></div>
     </div>
   </div>
@@ -576,57 +546,6 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 </div>
 </div>
 
-<!-- ══ SESSION PRESET MODAL ══ -->
-<div class="modal-overlay" id="template-modal" style="display:none" onclick="closeModal(event,'template-modal')">
-<div class="modal wide" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title" id="template-modal-title">Nuevo Preset de Sesión</div><div class="modal-close" onclick="closeModal(null,'template-modal')">✕</div></div>
-  <div class="form-hint mb12">Un preset es un esquema de %1RM/series/reps que después cargás en la sesión de un atleta puntual — no se aplica a nadie automáticamente.</div>
-  <div class="form-row c2 mb12">
-    <div class="form-group"><label class="form-label">Nombre del preset *</label><input class="form-input" id="tpl-label" placeholder="Fuerza máxima — tren inferior"></div>
-    <div class="form-group"><label class="form-label">Fase</label>
-      <select class="form-input form-select" id="tpl-phase">
-        <option value="base">Base</option>
-        <option value="fuerza">Fuerza</option>
-        <option value="potencia">Potencia</option>
-        <option value="mantenimiento">Mantenimiento</option>
-        <option value="descarga">Descarga</option>
-        <option value="competencia">Competencia / Taper</option>
-      </select>
-    </div>
-  </div>
-  <div class="form-group mb16"><label class="form-label">Notas</label><input class="form-input" id="tpl-notes" placeholder="Objetivo de la sesión…"></div>
-  <div class="flex justify-between items-center mb12">
-    <div class="sec-title" style="font-size:13px">Ejercicios del preset</div>
-    <button class="btn btn-ghost btn-sm" onclick="addTplItemRow()">+ Agregar ejercicio</button>
-  </div>
-  <div id="tpl-items"></div>
-  <div class="modal-ft">
-    <button class="btn" id="template-delete-btn" style="display:none" onclick="deleteTemplateFromModal()">Eliminar</button>
-    <button class="btn btn-ghost" onclick="closeModal(null,'template-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveTemplate()">Guardar Preset</button>
-  </div>
-</div>
-</div>
-
-<!-- ══ NEW SESSION MODAL ══ -->
-<div class="modal-overlay" id="newweek-modal" style="display:none" onclick="closeModal(event,'newweek-modal')">
-<div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title">Nueva Sesión</div><div class="modal-close" onclick="closeModal(null,'newweek-modal')">✕</div></div>
-  <div class="form-group mb12">
-    <label class="form-label">Basar en preset (opcional)</label>
-    <select class="form-input form-select" id="nw-template"><option value="">— Sesión en blanco —</option></select>
-  </div>
-  <div class="form-row c2 mb12">
-    <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="nw-date"></div>
-    <div class="form-group"><label class="form-label">Etiqueta</label><input class="form-input" id="nw-label" placeholder="Fuerza máxima — sin fatiga"></div>
-  </div>
-  <div class="modal-ft">
-    <button class="btn btn-ghost" onclick="closeModal(null,'newweek-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="confirmNewWeek()">Crear</button>
-  </div>
-</div>
-</div>
-
 <div id="toast-container"></div>
 
 <script>
@@ -703,34 +622,6 @@ function rowToRecord(r){
   return { id:r.id, athleteId:r.athlete_id, exerciseId:r.exercise_id, date:r.date,
     load:Number(r.load), reps:Number(r.reps), note:r.note, source:r.source, current:r.current };
 }
-function templateToRow(t){
-  const row = {};
-  if(t.id!==undefined) row.id = t.id;
-  if(t.label!==undefined) row.label = t.label;
-  if(t.phase!==undefined) row.phase = t.phase;
-  if(t.notes!==undefined) row.notes = t.notes||null;
-  if(t.items!==undefined) row.items = t.items;
-  return row;
-}
-function rowToTemplate(r){
-  return { id:r.id, label:r.label, phase:r.phase, notes:r.notes, items:r.items||[] };
-}
-function weekToRow(w){
-  const row = {};
-  if(w.id!==undefined) row.id = w.id;
-  if(w.athleteId!==undefined) row.athlete_id = w.athleteId;
-  if(w.label!==undefined) row.label = w.label;
-  if(w.phase!==undefined) row.phase = w.phase;
-  if(w.notes!==undefined) row.notes = w.notes||null;
-  if(w.startDate!==undefined) row.start_date = w.startDate;
-  if(w.templateId!==undefined) row.template_id = w.templateId||null;
-  if(w.items!==undefined) row.items = w.items;
-  return row;
-}
-function rowToWeek(r){
-  return { id:r.id, athleteId:r.athlete_id, label:r.label, phase:r.phase, notes:r.notes,
-    startDate:r.start_date, templateId:r.template_id, items:r.items||[] };
-}
 function settingsToRow(s){
   const row = {};
   if(s.coachName!==undefined) row.coach_name = s.coachName||null;
@@ -759,12 +650,10 @@ let currentUser = null; // Supabase Auth user object for the logged-in coach
 
 // Pulls every table for the authenticated coach into the in-memory `db`.
 async function loadCoachData(){
-  const [athletesRes, exercisesRes, recordsRes, templatesRes, weeksRes, settingsRes] = await Promise.all([
+  const [athletesRes, exercisesRes, recordsRes, settingsRes] = await Promise.all([
     supa.from('athletes').select('*'),
     supa.from('exercises').select('*'),
     supa.from('records').select('*'),
-    supa.from('templates').select('*'),
-    supa.from('weeks').select('*'),
     supa.from('coach_settings').select('*').maybeSingle(),
   ]);
   db = {
@@ -772,8 +661,6 @@ async function loadCoachData(){
     athletes: (athletesRes.data||[]).map(rowToAthlete),
     exercises: mergeExercises((exercisesRes.data||[]).map(rowToExercise)),
     records: (recordsRes.data||[]).map(rowToRecord),
-    templates: (templatesRes.data||[]).map(rowToTemplate),
-    weeks: (weeksRes.data||[]).map(rowToWeek),
   };
   if(!settingsRes.data && currentUser){
     await supa.from('coach_settings').insert(Object.assign({coach_id: currentUser.id}, settingsToRow(db.settings)));
@@ -789,8 +676,6 @@ async function loadPlayerData(athleteId, pin){
     athletes: [data.athlete],
     exercises: mergeExercises(data.exercises),
     records: data.records || [],
-    templates: [],
-    weeks: data.weeks || [],
   };
 }
 
@@ -907,7 +792,6 @@ const PANEL_META = {
   athletes:['Atletas','Gestión de atletas'],
   'athlete-profile':['Perfil del Atleta',''],
   estimate:['Estimar RM','Calculadora rápida de 1RM'],
-  planning:['Planificación','Sesiones individuales, chequeo del día y % de RM'],
   history:['Historial','Registros de RM y progresión'],
   exercises:['Ejercicios','Catálogo de movimientos'],
   settings:['Ajustes','Configuración de la app'],
@@ -928,7 +812,6 @@ function nav(panel, data){
   else if(panel==='athletes') renderAthletes();
   else if(panel==='athlete-profile' && navData.id) renderAthleteProfile(navData.id);
   else if(panel==='estimate') renderEstimatePanel();
-  else if(panel==='planning') renderPlanning();
   else if(panel==='history') renderHistory(true);
   else if(panel==='exercises') renderExercises();
   else if(panel==='settings') renderSettings();
@@ -984,7 +867,6 @@ function renderDashboard(){
     <div class="stat-card"><div class="stat-num">${aths.length}</div><div class="stat-label">Atletas activos</div></div>
     <div class="stat-card"><div class="stat-num">${(db.exercises||[]).length}</div><div class="stat-label">Ejercicios</div></div>
     <div class="stat-card"><div class="stat-num">${recs.length}</div><div class="stat-label">Registros de RM</div></div>
-    <div class="stat-card"><div class="stat-num">${(db.weeks||[]).length}</div><div class="stat-label">Sesiones registradas</div></div>
   `;
   const preview = aths.slice(0,6);
   document.getElementById('dash-athletes').innerHTML = preview.length
@@ -1091,7 +973,6 @@ async function hardDeleteAthlete(id){
   if(error){ toast('Error: '+error.message, true); return false; }
   db.athletes = db.athletes.filter(x=>x.id!==id);
   db.records = db.records.filter(r=>r.athleteId!==id);
-  db.weeks = db.weeks.filter(w=>w.athleteId!==id);
   toast('Atleta eliminado permanentemente');
   if(currentPanel==='athletes') renderAthletes(); else if(currentPanel==='dashboard') renderDashboard();
   return true;
@@ -1190,7 +1071,6 @@ function renderAthleteProfile(id){
         ${isActiveAthlete(a)
           ? `<button class="btn btn-ghost btn-sm" onclick="archiveAthlete('${a.id}')">📤 Dar de baja</button>`
           : `<button class="btn btn-ghost btn-sm" onclick="unarchiveAthlete('${a.id}')">↩ Reactivar</button>`}
-        <button class="btn btn-sm" onclick="nav('planning');planTab('athlete-weeks');selectAthleteWeek('${a.id}')">📅 Planificación</button>
         <button class="btn btn-primary btn-sm" onclick="nav('estimate');document.getElementById('est-athlete').value='${a.id}';updateEstimate()">+ Nuevo Registro</button>
       </div>
     </div>
@@ -1203,6 +1083,11 @@ function renderAthleteProfile(id){
       </table></div>
     </div>
     <div class="sec">
+      <div class="sec-title mb12">Evolución de Rendimiento</div>
+      <div class="small mb12">Mirá si ${esc(a.firstName)} viene mejorando o bajando su RM estimado, agrupado por semana, mes o año.</div>
+      <div id="ath-perf-section"></div>
+    </div>
+    <div class="sec">
       <div class="flex justify-between items-center mb12">
         <div class="sec-title">Progresión por Ejercicio — Peso × Reps semana a semana</div>
       </div>
@@ -1210,6 +1095,7 @@ function renderAthleteProfile(id){
       <div id="ath-profile-exercises"></div>
     </div>
   `;
+  renderPerformanceSection(a.id, 'ath-perf-section');
   document.getElementById('ath-profile-exercises').innerHTML = buildProgressionSectionsHTML(a.id, true);
 }
 // Per-exercise weight × reps progression cards, reused by the coach's athlete
@@ -1387,364 +1273,115 @@ async function saveEstimate(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   PLANNING — TEMPLATES + ATHLETE WEEKS
+   EVOLUCIÓN DE RENDIMIENTO — reemplaza a la vieja Planificación.
+   Agrupa los registros de RM de un atleta+ejercicio en baldes por
+   semana/mes/año (promediando si hay más de un registro en el mismo
+   balde) y grafica esa serie, con un resumen en texto plano de si
+   viene mejorando o bajando. La misma función arma el bloque tanto
+   para el perfil del atleta (coach) como para "Mi Progreso" (jugador).
    ═══════════════════════════════════════════════════════════════ */
-const PHASE_COLORS = {base:'badge-bl', fuerza:'badge-ac', potencia:'badge-pu', mantenimiento:'badge-gr', descarga:'badge-ye', competencia:'badge-re'};
-const PHASE_LABELS = {base:'Base', fuerza:'Fuerza', potencia:'Potencia', mantenimiento:'Mantenimiento', descarga:'Descarga', competencia:'Competencia / Taper'};
+let perfPeriod = 'month'; // 'week' | 'month' | 'year'
+let perfExerciseId = null;
 
-function planTab(tab){
-  document.querySelectorAll('#panel-planning .chip').forEach(c=>c.classList.toggle('active', c.dataset.tab===tab));
-  document.getElementById('plan-templates-view').style.display = tab==='templates' ? 'block' : 'none';
-  document.getElementById('plan-athlete-weeks-view').style.display = tab==='athlete-weeks' ? 'block' : 'none';
-  if(tab==='templates') renderTemplatesView();
-  else renderAthleteWeeksView();
+function periodLabel(p){ return {week:'Semana', month:'Mes', year:'Año'}[p]||'Mes'; }
+const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function periodKey(dateISO, period){
+  const d = new Date(dateISO+'T00:00:00');
+  if(period==='year') return String(d.getFullYear());
+  if(period==='month') return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  // week: Monday-anchored ISO-ish week key
+  const dow = (d.getDay()+6)%7;
+  const monday = new Date(d); monday.setDate(d.getDate()-dow);
+  return monday.toISOString().slice(0,10);
 }
-function renderPlanning(){ planTab('templates'); }
-
-function renderTemplatesView(){
-  const el = document.getElementById('plan-templates-view');
-  const tpls = db.templates||[];
+function periodBucketLabel(key, period){
+  if(period==='year') return key;
+  if(period==='month'){ const [y,m] = key.split('-'); return MONTH_SHORT[Number(m)-1]+' '+y; }
+  return fmtDate(key);
+}
+// Groups an athlete+exercise's records into chronological period buckets,
+// each holding the average estimated RM of that bucket — so several
+// check-ins in the same week/month don't each get their own point.
+function buildPerfPoints(athleteId, exerciseId, period){
+  const recs = (db.records||[]).filter(r=>r.athleteId===athleteId && r.exerciseId===exerciseId);
+  if(!recs.length) return [];
+  const buckets = new Map();
+  recs.forEach(r=>{
+    const key = periodKey(r.date, period);
+    const est = recEstTotal(r);
+    if(!buckets.has(key)) buckets.set(key, {sum:0, n:0, lastDate:r.date});
+    const b = buckets.get(key);
+    b.sum += est; b.n++;
+    if(r.date>=b.lastDate) b.lastDate = r.date;
+  });
+  return Array.from(buckets.entries())
+    .map(([key,b])=>({key, date:b.lastDate, val:b.sum/b.n}))
+    .sort((a,b)=>new Date(a.date)-new Date(b.date));
+}
+function perfChartSVG(points, period){
+  if(points.length<2) return '';
+  const w=640,h=160,pad=32;
+  const vals = points.map(p=>p.val);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max-min)||1;
+  const stepX = (w-pad*2)/Math.max(1,points.length-1);
+  const coords = points.map((p,i)=>{
+    const x = pad + i*stepX;
+    const y = h-pad - ((p.val-min)/range)*(h-pad*2);
+    return [x,y];
+  });
+  const up = points[points.length-1].val >= points[0].val;
+  const color = up ? '#22C55E' : '#F59E0B';
+  const path = coords.map((c,i)=>(i===0?'M':'L')+c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
+  const dots = coords.map((c,i)=>`<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="4" fill="${color}"><title>${esc(periodBucketLabel(points[i].key,period))}: ${points[i].val.toFixed(1)} kg</title></circle>`).join('');
+  const labels = points.map((p,i)=> (i===0||i===points.length-1||points.length<=6) ? `<text x="${coords[i][0].toFixed(1)}" y="${h-8}" font-size="9" fill="#5C6779" text-anchor="middle">${esc(periodBucketLabel(p.key,period))}</text>` : '').join('');
+  return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" width="100%" height="160" preserveAspectRatio="none">
+    <text x="${pad}" y="16" font-size="10" fill="#98A4B8">Máx: ${max.toFixed(1)} kg</text>
+    <text x="${w-pad}" y="16" font-size="10" fill="#98A4B8" text-anchor="end">Mín: ${min.toFixed(1)} kg</text>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2.5"/>
+    ${dots}${labels}
+  </svg>`;
+}
+function perfDeltaHTML(points, period){
+  if(!points.length) return '<div class="small">Todavía no hay registros de RM para este ejercicio.</div>';
+  if(points.length<2) return `<div class="small">Con un solo período (${periodLabel(period).toLowerCase()}) todavía no se puede ver una tendencia — seguí registrando.</div>`;
+  const first = points[0].val, last = points[points.length-1].val;
+  const delta = last-first;
+  const pct = first ? (delta/first)*100 : 0;
+  if(Math.abs(pct)<0.5) return `<div class="small">Se mantuvo estable en <b>${last.toFixed(1)} kg</b> desde ${fmtDate(points[0].date)}.</div>`;
+  return delta>0
+    ? `<div><span style="color:var(--pos);font-weight:700">▲ Mejoró ${pct.toFixed(1)}%</span> <span class="small">— de ${first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`
+    : `<div><span style="color:var(--ye);font-weight:700">▼ Bajó ${Math.abs(pct).toFixed(1)}%</span> <span class="small">— de ${first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`;
+}
+// Renders the whole card (exercise picker + semana/mes/año chips + chart +
+// mejora/baja summary) for one athlete into containerId. Shared by the
+// coach's athlete profile and the player's own "Mi Progreso" tab.
+function renderPerformanceSection(athleteId, containerId){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const exs = (db.exercises||[]).filter(ex=>(db.records||[]).some(r=>r.athleteId===athleteId && r.exerciseId===ex.id));
+  if(!exs.length){
+    el.innerHTML = `<div class="card empty"><div class="empty-icon">📈</div><div class="empty-title">Todavía no hay registros</div><div class="empty-sub">En cuanto haya un par de registros de RM vas a poder ver acá si venís mejorando o bajando.</div></div>`;
+    return;
+  }
+  if(!perfExerciseId || !exs.find(e=>e.id===perfExerciseId)) perfExerciseId = exs[0].id;
+  const points = buildPerfPoints(athleteId, perfExerciseId, perfPeriod);
+  const chart = perfChartSVG(points, perfPeriod);
   el.innerHTML = `
-    <div class="sec-hd"><div class="small">Un preset es un esquema reutilizable de %1RM/series/reps (ej. "Fuerza máxima — baja fatiga"). Lo cargás al crear la sesión de un atleta puntual — es solo un punto de partida, después lo ajustás caso por caso.</div>
-      <button class="btn btn-primary" onclick="openTemplateModal()">+ Nuevo Preset</button>
-    </div>
-    <div id="tpl-list"></div>
-  `;
-  const list = document.getElementById('tpl-list');
-  list.innerHTML = tpls.length ? tpls.map(t=>`
-    <div class="card mb12">
-      <div class="flex justify-between items-center flex-wrap gap8 mb8">
-        <div class="flex items-center gap10">
-          <div style="font-weight:700;font-size:14px">${esc(t.label)}</div>
-          <span class="badge ${PHASE_COLORS[t.phase]||'badge-gr'}">${PHASE_LABELS[t.phase]||t.phase}</span>
+    <div class="card">
+      <div class="sec-hd" style="margin-bottom:14px">
+        <select class="form-input form-select" style="width:220px" onchange="perfExerciseId=this.value;renderPerformanceSection('${athleteId}','${containerId}')">
+          ${exs.map(e=>`<option value="${e.id}" ${e.id===perfExerciseId?'selected':''}>${esc(e.name)}</option>`).join('')}
+        </select>
+        <div class="toolbar">
+          ${['week','month','year'].map(p=>`<div class="chip ${perfPeriod===p?'active':''}" onclick="perfPeriod='${p}';renderPerformanceSection('${athleteId}','${containerId}')">${periodLabel(p)}</div>`).join('')}
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="openTemplateModal('${t.id}')">✎ Editar</button>
       </div>
-      ${t.notes?`<div class="small mb8">${esc(t.notes)}</div>`:''}
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Ejercicio</th><th>% 1RM</th><th>Series × Reps</th><th>RPE obj.</th><th>Nota</th></tr></thead>
-        <tbody>${(t.items||[]).map(it=>{
-          const ex = getExercise(it.exerciseId);
-          return `<tr><td>${esc(ex?ex.name:'—')}</td><td>${it.pct}%</td><td>${it.series}×${it.repsMin}${it.repsMax&&it.repsMax!==it.repsMin?'-'+it.repsMax:''}</td><td>${it.rpe||'—'}</td><td>${esc(it.note||'')}</td></tr>`;
-        }).join('')}</tbody>
-      </table></div>
-      <div class="small" style="margin-top:8px">Se usa desde "Sesiones del atleta → + Nueva Sesión".</div>
-    </div>
-  `).join('') : `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">Sin presets todavía</div><div class="empty-sub">Creá un esquema de %1RM por ejercicio para reutilizar en sesiones individuales</div></div>`;
-}
-
-let editingTemplateId = null;
-function openTemplateModal(id){
-  editingTemplateId = id||null;
-  const t = id ? db.templates.find(x=>x.id===id) : null;
-  document.getElementById('template-modal-title').textContent = id ? 'Editar Preset' : 'Nuevo Preset de Sesión';
-  document.getElementById('template-delete-btn').style.display = id ? 'inline-flex' : 'none';
-  document.getElementById('tpl-label').value = t?t.label:'';
-  document.getElementById('tpl-phase').value = t?t.phase:'base';
-  document.getElementById('tpl-notes').value = t?t.notes||'':'';
-  const itemsWrap = document.getElementById('tpl-items');
-  itemsWrap.innerHTML = '';
-  (t&&t.items&&t.items.length ? t.items : [{}]).forEach(it=>addTplItemRow(it));
-  document.getElementById('template-modal').style.display = 'flex';
-}
-function addTplItemRow(it){
-  it = it||{};
-  const wrap = document.getElementById('tpl-items');
-  const row = document.createElement('div');
-  row.className = 'form-row';
-  row.style.cssText = 'grid-template-columns:1.6fr .8fr .7fr .7fr .7fr 1fr auto;gap:8px;margin-bottom:8px;align-items:end';
-  row.innerHTML = `
-    <div class="form-group"><label class="form-label">Ejercicio</label>
-      <select class="form-input form-select tpl-it-ex">${(db.exercises||[]).map(e=>`<option value="${e.id}" ${it.exerciseId===e.id?'selected':''}>${esc(e.name)}</option>`).join('')}</select>
-    </div>
-    <div class="form-group"><label class="form-label">% 1RM</label><input class="form-input tpl-it-pct" type="number" step="1" value="${it.pct!=null?it.pct:75}"></div>
-    <div class="form-group"><label class="form-label">Series</label><input class="form-input tpl-it-series" type="number" value="${it.series!=null?it.series:4}"></div>
-    <div class="form-group"><label class="form-label">Reps min</label><input class="form-input tpl-it-repsmin" type="number" value="${it.repsMin!=null?it.repsMin:5}"></div>
-    <div class="form-group"><label class="form-label">Reps max</label><input class="form-input tpl-it-repsmax" type="number" value="${it.repsMax!=null?it.repsMax:it.repsMin!=null?it.repsMin:5}"></div>
-    <div class="form-group"><label class="form-label">RPE / Nota</label><input class="form-input tpl-it-note" value="${esc(it.note||'')}" placeholder="RPE 8"></div>
-    <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()" title="Quitar">✕</button>
-  `;
-  wrap.appendChild(row);
-}
-async function saveTemplate(){
-  const label = document.getElementById('tpl-label').value.trim();
-  if(!label){ toast('Ponele un nombre al preset', true); return; }
-  const items = Array.from(document.querySelectorAll('#tpl-items > div')).map(row=>({
-    id: uid(),
-    exerciseId: row.querySelector('.tpl-it-ex').value,
-    pct: Number(row.querySelector('.tpl-it-pct').value)||0,
-    series: Number(row.querySelector('.tpl-it-series').value)||0,
-    repsMin: Number(row.querySelector('.tpl-it-repsmin').value)||0,
-    repsMax: Number(row.querySelector('.tpl-it-repsmax').value)||0,
-    note: row.querySelector('.tpl-it-note').value.trim(),
-  })).filter(it=>it.exerciseId);
-  const data = { label, phase: document.getElementById('tpl-phase').value, notes: document.getElementById('tpl-notes').value.trim(), items };
-  const id = editingTemplateId || uid();
-  const {error} = await supa.from('templates').upsert(templateToRow(Object.assign({id}, data)));
-  if(error){ toast('Error al guardar: '+error.message, true); return; }
-  if(editingTemplateId){
-    const idx = db.templates.findIndex(x=>x.id===editingTemplateId);
-    db.templates[idx] = Object.assign({}, db.templates[idx], data);
-  }else{
-    data.id = id;
-    db.templates.push(data);
-  }
-  document.getElementById('template-modal').style.display = 'none';
-  toast('Preset guardado');
-  renderTemplatesView();
-}
-async function deleteTemplateFromModal(){
-  if(!editingTemplateId) return;
-  if(!confirm('¿Eliminar este preset?')) return;
-  const {error} = await supa.from('templates').delete().eq('id', editingTemplateId);
-  if(error){ toast('Error: '+error.message, true); return; }
-  db.templates = db.templates.filter(t=>t.id!==editingTemplateId);
-  db.weeks.forEach(w=>{ if(w.templateId===editingTemplateId) w.templateId=null; });
-  document.getElementById('template-modal').style.display = 'none';
-  renderTemplatesView();
-  toast('Preset eliminado');
-}
-
-let selectedWeekAthleteId = null, selectedWeekId = null;
-function renderAthleteWeeksView(){
-  const el = document.getElementById('plan-athlete-weeks-view');
-  el.innerHTML = `
-    <div class="sec-hd">
-      <select class="form-input form-select" style="width:220px" id="aw-athlete-select" onchange="selectAthleteWeek(this.value)"></select>
-      <button class="btn btn-primary" onclick="openNewWeekModal()" ${!selectableAthletes(navData.athleteId).length?'disabled':''}>+ Nueva Sesión</button>
-    </div>
-    <div class="flex gap16 flex-wrap" style="align-items:flex-start">
-      <div style="min-width:220px" id="aw-weeks-list"></div>
-      <div style="flex:1;min-width:280px" id="aw-week-detail"></div>
+      ${chart || `<div class="empty" style="padding:24px 0"><div class="empty-sub">Necesitás al menos 2 ${periodLabel(perfPeriod).toLowerCase()}s con registros para ver el gráfico — probá otro período o cargá más registros.</div></div>`}
+      <div class="hr"></div>
+      ${perfDeltaHTML(points, perfPeriod)}
     </div>
   `;
-  const sel = document.getElementById('aw-athlete-select');
-  const athOptions = selectableAthletes(navData.athleteId);
-  sel.innerHTML = athOptions.map(a=>`<option value="${a.id}">${esc(athleteName(a))}${!isActiveAthlete(a)?' (de baja)':''}</option>`).join('') || '<option value="">— sin atletas —</option>';
-  if(navData.athleteId) selectedWeekAthleteId = navData.athleteId;
-  if(!selectedWeekAthleteId && athOptions.length) selectedWeekAthleteId = athOptions[0].id;
-  if(selectedWeekAthleteId) sel.value = selectedWeekAthleteId;
-  selectAthleteWeek(selectedWeekAthleteId);
-}
-function selectAthleteWeek(athleteId){
-  selectedWeekAthleteId = athleteId;
-  const listEl = document.getElementById('aw-weeks-list');
-  if(!listEl) return;
-  const weeks = (db.weeks||[]).filter(w=>w.athleteId===athleteId).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
-  listEl.innerHTML = weeks.length ? weeks.map(w=>`
-    <div class="chip no-print" style="display:flex;justify-content:space-between;width:100%;margin-bottom:6px;${selectedWeekId===w.id?'background:var(--aca);border-color:var(--ac);color:var(--ac)':''}" onclick="selectWeek('${w.id}')">
-      <span>${esc(w.label)}</span><span class="small">${fmtDate(w.startDate)}</span>
-    </div>
-  `).join('') : `<div class="small">Sin sesiones para este atleta todavía</div>`;
-  if(weeks.length && !weeks.find(w=>w.id===selectedWeekId)) selectedWeekId = weeks[0].id;
-  if(!weeks.length) selectedWeekId = null;
-  renderWeekDetail();
-}
-function selectWeek(id){ selectedWeekId = id; selectAthleteWeek(selectedWeekAthleteId); }
-
-function renderWeekDetail(){
-  const detail = document.getElementById('aw-week-detail');
-  if(!detail) return;
-  const w = (db.weeks||[]).find(x=>x.id===selectedWeekId);
-  if(!w){ detail.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Elegí o creá una sesión</div></div>`; return; }
-  detail.innerHTML = `
-    <div class="flex justify-between items-center flex-wrap gap8 mb16">
-      <div class="flex items-center gap10">
-        <div style="font-weight:700;font-size:15px">${esc(w.label)}</div>
-        <span class="badge ${PHASE_COLORS[w.phase]||'badge-gr'}">${PHASE_LABELS[w.phase]||w.phase}</span>
-        <span class="small">${fmtDate(w.startDate)}</span>
-      </div>
-      <div class="flex gap8">
-        <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Imprimir</button>
-        <button class="btn btn-ghost btn-sm btn-danger no-print" onclick="deleteWeek('${w.id}')">Eliminar sesión</button>
-      </div>
-    </div>
-    ${w.notes?`<div class="small mb16">📝 ${esc(w.notes)}</div>`:''}
-    <div id="aw-items"></div>
-  `;
-  const itemsEl = document.getElementById('aw-items');
-  itemsEl.innerHTML = (w.items||[]).map(it=>buildSessionItemHTML(w, it, 'aw')).join('') || `<div class="empty">Esta sesión no tiene ejercicios.</div>`;
-  (w.items||[]).forEach(it=>updateItemSuggestion(w, it, 'aw'));
-}
-// One exercise block: daily check + suggested weight + actual log. `prefix` namespaces
-// the element ids ('aw' = coach's Planning panel, 'pl' = player's own session view) so
-// the coach's and a logged-in player's views can coexist in the DOM without id clashes,
-// since only one is hidden via CSS, not removed.
-function buildSessionItemHTML(w, it, prefix){
-  const ex = getExercise(it.exerciseId);
-  const unitLabel = ex && ex.bodyweightRelative ? 'kg de lastre' : 'kg';
-  return `<div class="plan-item">
-      <div class="plan-item-hd">
-        <div class="plan-ex-name">${esc(ex?ex.name:'Ejercicio eliminado')}</div>
-        <span class="badge badge-gr">${it.pct}% de 1RM</span>
-      </div>
-      <div class="plan-sub">
-        <span>Series × Reps: <b>${it.series}×${it.repsMin}${it.repsMax&&it.repsMax!==it.repsMin?'-'+it.repsMax:''}</b></span>
-        ${it.note?`<span>${esc(it.note)}</span>`:''}
-      </div>
-      <div class="card no-print" style="background:var(--dk3);border-color:var(--bdr2);padding:12px 14px;margin-bottom:10px">
-        <div class="small mb8" style="color:var(--g2)">🎯 Chequeo del día — el RM cambia de un día a otro. Una serie de aproximación antes de ir a la carga de trabajo ajusta el % a como está el atleta HOY, no a un test de hace semanas.</div>
-        <div class="flex items-end gap8 flex-wrap">
-          <div class="form-group" style="width:130px"><label class="form-label">Peso (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="${prefix}-check-load-${it.id}" value="${it.checkLoad!=null?it.checkLoad:''}" oninput="onCheckInput('${w.id}','${it.id}','${prefix}')"></div>
-          <div class="form-group" style="width:90px"><label class="form-label">Reps</label><input class="form-input" type="number" id="${prefix}-check-reps-${it.id}" value="${it.checkReps!=null?it.checkReps:''}" oninput="onCheckInput('${w.id}','${it.id}','${prefix}')"></div>
-          <button class="btn btn-ghost btn-sm" onclick="saveDailyCheck('${w.id}','${it.id}','${prefix}')">💾 Guardar chequeo</button>
-        </div>
-        <div id="${prefix}-check-preview-${it.id}" class="small" style="margin-top:8px"></div>
-      </div>
-      <div class="plan-suggest" id="${prefix}-suggest-${it.id}"></div>
-      <div class="plan-actual-row no-print">
-        <div class="form-group"><label class="form-label">Real (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="${prefix}-actual-load-${it.id}" value="${it.actualLoad!=null?it.actualLoad:''}"></div>
-        <div class="form-group"><label class="form-label">Reps logradas</label><input class="form-input" type="number" id="${prefix}-actual-reps-${it.id}" value="${it.actualReps!=null?it.actualReps:''}"></div>
-        <div class="form-group" style="width:80px"><label class="form-label">RPE</label><input class="form-input" type="number" min="1" max="10" id="${prefix}-actual-rpe-${it.id}" value="${it.actualRpe!=null?it.actualRpe:''}"></div>
-        <div class="form-group" style="width:160px"><label class="form-label">Nota</label><input class="form-input" id="${prefix}-actual-note-${it.id}" value="${esc(it.actualNote||'')}"></div>
-        <button class="btn btn-primary btn-sm" onclick="logActual('${w.id}','${it.id}','${prefix}')">💾 Guardar</button>
-        ${it.loggedAt?`<span class="small">✓ Registrado ${fmtDate(it.loggedAt)}</span>`:''}
-      </div>
-    </div>`;
-}
-// Recomputes and injects the suggested weight + daily-check preview for one exercise block,
-// without re-rendering the whole session (keeps focus in the check inputs while typing).
-function updateItemSuggestion(w, it, prefix){
-  const ath = getAthlete(w.athleteId), ex = getExercise(it.exerciseId);
-  const unitLabel = ex && ex.bodyweightRelative ? 'kg de lastre' : 'kg';
-  const refRM = getCurrentTotalRM(w.athleteId, it.exerciseId);
-  let checkRM = null;
-  if(it.checkLoad && it.checkReps) checkRM = estimate1RM(totalLoad(ath, ex, it.checkLoad), it.checkReps, db.settings.formula);
-  const effectiveRM = checkRM!=null ? checkRM : refRM;
-
-  const suggestEl = document.getElementById(prefix+'-suggest-'+it.id);
-  if(suggestEl){
-    const suggested = effectiveRM!=null ? loadFromTotal(ath, ex, effectiveRM*(it.pct/100), ex?ex.increment:2.5) : null;
-    suggestEl.innerHTML = `
-      <div class="plan-suggest-kg">${suggested!=null?suggested.toFixed(1)+' '+unitLabel:'— (sin RM cargado)'}</div>
-      <div class="plan-suggest-label">Peso sugerido · ${it.pct}% ${checkRM!=null?'del RM de hoy':'del RM de referencia'}</div>
-    `;
-  }
-  const prevEl = document.getElementById(prefix+'-check-preview-'+it.id);
-  if(prevEl){
-    if(checkRM!=null){
-      let deltaTxt = '';
-      if(refRM){
-        const delta = ((checkRM-refRM)/refRM)*100;
-        deltaTxt = delta>=0
-          ? ` — <span style="color:var(--pos)">▲ ${delta.toFixed(1)}% respecto a tu RM de referencia (${refRM.toFixed(1)} kg)</span>`
-          : ` — <span style="color:var(--ye)">▼ ${Math.abs(delta).toFixed(1)}% respecto a tu RM de referencia (${refRM.toFixed(1)} kg) — hoy conviene ir más conservador</span>`;
-      }
-      prevEl.innerHTML = `RM estimado <b>HOY</b>: <b style="color:var(--ac)">${checkRM.toFixed(1)} kg</b>${deltaTxt}`;
-    }else{
-      const refRec = getCurrentRecord(w.athleteId, it.exerciseId);
-      prevEl.innerHTML = refRM!=null
-        ? `Sin chequeo cargado — usando RM de referencia: <b>${refRM.toFixed(1)} kg</b> (${refRec?fmtDate(refRec.date):''}).`
-        : `Sin chequeo ni RM de referencia todavía — cargá un test en "Estimar RM" o hacé el chequeo acá arriba.`;
-    }
-  }
-}
-// Purely local — fires on every keystroke, so it never hits the network. Only
-// updates the in-memory item + live preview; saveDailyCheck/logActual are what
-// actually persist a value, on explicit "Guardar".
-function onCheckInput(weekId, itemId, prefix){
-  const w = db.weeks.find(x=>x.id===weekId); if(!w) return;
-  const it = w.items.find(x=>x.id===itemId); if(!it) return;
-  const loadVal = document.getElementById(prefix+'-check-load-'+itemId).value;
-  const repsVal = document.getElementById(prefix+'-check-reps-'+itemId).value;
-  it.checkLoad = loadVal===''?null:Number(loadVal);
-  it.checkReps = repsVal===''?null:Number(repsVal);
-  updateItemSuggestion(w, it, prefix);
-}
-// Persists a patch onto one session item's jsonb `items` field — a direct
-// authenticated table update for the coach ('aw'), or the PIN-checked
-// player_update_week_item function for an athlete with no session ('pl').
-async function persistWeekItemPatch(w, itemId, patch, prefix){
-  if(prefix==='pl'){
-    const {error} = await supa.rpc('player_update_week_item', {
-      p_athlete_id: playerAthleteId, p_pin: playerPin, p_week_id: w.id, p_item_id: itemId, p_patch: patch
-    });
-    return error||null;
-  }
-  const newItems = w.items.map(x=>x.id===itemId ? Object.assign({},x,patch) : x);
-  const {error} = await supa.from('weeks').update({items:newItems}).eq('id', w.id);
-  return error||null;
-}
-async function saveDailyCheck(weekId, itemId, prefix){
-  const w = db.weeks.find(x=>x.id===weekId); if(!w) return;
-  const it = w.items.find(x=>x.id===itemId); if(!it) return;
-  const load = Number(document.getElementById(prefix+'-check-load-'+itemId).value);
-  const reps = Number(document.getElementById(prefix+'-check-reps-'+itemId).value);
-  if(!load || !reps){ toast('Ingresá peso y reps del chequeo', true); return; }
-  const err = await persistWeekItemPatch(w, itemId, {checkLoad:load, checkReps:reps}, prefix);
-  if(err){ toast('Error: '+err.message, true); return; }
-  it.checkLoad = load; it.checkReps = reps;
-  const ath = getAthlete(w.athleteId), ex = getExercise(it.exerciseId);
-  const checkTotal = estimate1RM(totalLoad(ath, ex, load), reps, db.settings.formula);
-  const refTotal = getCurrentTotalRM(w.athleteId, it.exerciseId);
-  const askUpdate = confirm(
-    'RM estimado hoy: '+checkTotal.toFixed(1)+' kg'+(refTotal!=null?` (referencia actual: ${refTotal.toFixed(1)} kg)`:'')+
-    '.\n\n¿Usarlo como nuevo RM de referencia a largo plazo?\n\nAceptar = sí, reemplaza la referencia.\nCancelar = usarlo solo para calcular el % de hoy, sin tocar la referencia.'
-  );
-  await addRecord(w.athleteId, it.exerciseId, w.startDate, load, reps, 'Chequeo del día antes de la sesión', 'daily-check', askUpdate);
-  toast('Chequeo guardado');
-  updateItemSuggestion(w, it, prefix);
-}
-async function logActual(weekId, itemId, prefix){
-  const w = db.weeks.find(x=>x.id===weekId);
-  if(!w) return;
-  const it = w.items.find(x=>x.id===itemId);
-  if(!it) return;
-  const load = Number(document.getElementById(prefix+'-actual-load-'+itemId).value);
-  const reps = Number(document.getElementById(prefix+'-actual-reps-'+itemId).value);
-  const rpe = document.getElementById(prefix+'-actual-rpe-'+itemId).value;
-  const note = document.getElementById(prefix+'-actual-note-'+itemId).value.trim();
-  if(!load || !reps){ toast('Ingresá peso real y repeticiones', true); return; }
-  const actualRpe = rpe===''?null:Number(rpe);
-  const loggedAt = todayISO();
-  const patch = {actualLoad:load, actualReps:reps, actualRpe, actualNote:note, loggedAt};
-  const err = await persistWeekItemPatch(w, itemId, patch, prefix);
-  if(err){ toast('Error: '+err.message, true); return; }
-  Object.assign(it, patch);
-  const ath = getAthlete(w.athleteId), ex = getExercise(it.exerciseId);
-  const tl = totalLoad(ath, ex, load);
-  const newEst = estimate1RM(tl, reps, db.settings.formula);
-  const currentTotal = getCurrentTotalRM(w.athleteId, it.exerciseId);
-  const setCurrent = currentTotal==null || newEst > currentTotal;
-  const fullNote = [note, actualRpe!=null?('RPE '+actualRpe):''].filter(Boolean).join(' · ') || 'Registrado desde la sesión';
-  await addRecord(w.athleteId, it.exerciseId, w.startDate, load, reps, fullNote, 'session', setCurrent);
-  toast(setCurrent ? 'Guardado — nuevo RM de referencia: '+newEst.toFixed(1)+' kg' : 'Guardado');
-  if(prefix==='pl') renderPlayerWeekDetail(); else renderWeekDetail();
-}
-async function deleteWeek(id){
-  if(!confirm('¿Eliminar esta sesión?')) return;
-  const {error} = await supa.from('weeks').delete().eq('id', id);
-  if(error){ toast('Error: '+error.message, true); return; }
-  db.weeks = db.weeks.filter(w=>w.id!==id);
-  selectedWeekId = null;
-  selectAthleteWeek(selectedWeekAthleteId);
-  toast('Sesión eliminada');
-}
-
-function openNewWeekModal(){
-  const sel = document.getElementById('nw-template');
-  sel.innerHTML = '<option value="">— Sesión en blanco —</option>' + (db.templates||[]).map(t=>`<option value="${t.id}">${esc(t.label)}</option>`).join('');
-  document.getElementById('nw-date').value = todayISO();
-  document.getElementById('nw-label').value = '';
-  document.getElementById('newweek-modal').style.display = 'flex';
-}
-async function confirmNewWeek(){
-  if(!selectedWeekAthleteId){ toast('Elegí un atleta primero', true); return; }
-  const tplId = document.getElementById('nw-template').value;
-  const tpl = tplId ? db.templates.find(t=>t.id===tplId) : null;
-  const date = document.getElementById('nw-date').value || todayISO();
-  const label = document.getElementById('nw-label').value.trim() || (tpl?tpl.label:'Nueva sesión');
-  const w = {
-    id: uid(), athleteId: selectedWeekAthleteId, label, phase: tpl?tpl.phase:'base', notes: tpl?tpl.notes:'', startDate: date, templateId: tpl?tpl.id:null,
-    items: tpl ? (tpl.items||[]).map(it=>({id:uid(), exerciseId:it.exerciseId, pct:it.pct, series:it.series, repsMin:it.repsMin, repsMax:it.repsMax, note:it.note, checkLoad:null, checkReps:null, actualLoad:null, actualReps:null, actualRpe:null, actualNote:'', loggedAt:null})) : []
-  };
-  const {error} = await supa.from('weeks').insert(weekToRow(w));
-  if(error){ toast('Error al crear la sesión: '+error.message, true); return; }
-  db.weeks.push(w);
-  document.getElementById('newweek-modal').style.display = 'none';
-  selectedWeekId = w.id;
-  selectAthleteWeek(selectedWeekAthleteId);
-  toast('Sesión creada');
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1848,13 +1485,9 @@ function importData(file){
       toast('Importando…');
       const athletes = (parsed.athletes||[]).map(athleteToRow);
       const exercises = (parsed.exercises||[]).filter(x=>!x.builtin).map(exerciseToRow);
-      const templates = (parsed.templates||[]).map(templateToRow);
-      const weeks = (parsed.weeks||[]).map(weekToRow);
       const records = (parsed.records||[]).map(recordToRow);
       if(athletes.length){ const {error} = await supa.from('athletes').upsert(athletes); if(error) throw error; }
       if(exercises.length){ const {error} = await supa.from('exercises').upsert(exercises); if(error) throw error; }
-      if(templates.length){ const {error} = await supa.from('templates').upsert(templates); if(error) throw error; }
-      if(weeks.length){ const {error} = await supa.from('weeks').upsert(weeks); if(error) throw error; }
       if(records.length){ const {error} = await supa.from('records').upsert(records); if(error) throw error; }
       if(parsed.settings){
         const row = Object.assign({coach_id: currentUser.id}, settingsToRow(parsed.settings));
@@ -1871,10 +1504,12 @@ function importData(file){
   reader.readAsText(file);
 }
 async function resetData(){
-  if(!confirm('Esto borra TODOS los atletas, registros y planificaciones. ¿Estás seguro?')) return;
+  if(!confirm('Esto borra TODOS los atletas y registros de RM. ¿Estás seguro?')) return;
   if(!confirm('Última confirmación: esta acción es irreversible. ¿Borrar todo?')) return;
   toast('Borrando…');
   await supa.from('records').delete().neq('id','__none__');
+  // weeks/templates son tablas de la vieja Planificación: ya no se usan, pero
+  // se limpian igual acá por si quedó algo cargado de antes.
   await supa.from('weeks').delete().neq('id','__none__');
   await supa.from('templates').delete().neq('id','__none__');
   await supa.from('athletes').delete().neq('id','__none__');
@@ -1895,7 +1530,6 @@ async function resetData(){
 let appMode = 'coach'; // 'coach' | 'player'
 let playerAthleteId = null;
 let playerPin = '';
-let playerSelectedWeekId = null;
 let pendingPinAction = null; // {athleteId}
 let playerGateList = []; // [{id, firstName, lastName, sport, hasPin}] from player_list_athletes()
 
@@ -1989,57 +1623,14 @@ function finishPlayerLogin(athleteId){
   document.getElementById('player-name').textContent = athleteName(a);
   const daysToMatch = a.nextMatch ? Math.ceil((new Date(a.nextMatch)-new Date(todayISO()))/86400000) : null;
   document.getElementById('player-meta').textContent = [a.sport, a.bodyweight?a.bodyweight+' kg':null, daysToMatch!=null?('Partido en '+daysToMatch+' días'):null].filter(Boolean).join(' · ');
-  playerSelectedWeekId = null;
-  playerTab('sessions');
+  playerTab('log');
 }
 function playerTab(tab){
   document.querySelectorAll('#player-home .chip').forEach(c=>c.classList.toggle('active', c.dataset.ptab===tab));
-  document.getElementById('player-tab-sessions').style.display = tab==='sessions' ? 'block' : 'none';
   document.getElementById('player-tab-log').style.display = tab==='log' ? 'block' : 'none';
   document.getElementById('player-tab-progress').style.display = tab==='progress' ? 'block' : 'none';
-  if(tab==='sessions') renderPlayerSessionsTab();
-  else if(tab==='log') renderPlayerLogTab();
+  if(tab==='log') renderPlayerLogTab();
   else renderPlayerProgressTab();
-}
-function renderPlayerSessionsTab(){
-  const el = document.getElementById('player-tab-sessions');
-  el.innerHTML = `
-    <div class="flex gap16 flex-wrap" style="align-items:flex-start">
-      <div style="min-width:200px" id="player-weeks-list"></div>
-      <div style="flex:1;min-width:280px" id="player-week-detail"></div>
-    </div>`;
-  const weeks = (db.weeks||[]).filter(w=>w.athleteId===playerAthleteId).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
-  const listEl = document.getElementById('player-weeks-list');
-  listEl.innerHTML = weeks.length ? weeks.map(w=>`
-    <div class="chip no-print" style="display:flex;justify-content:space-between;width:100%;margin-bottom:6px;${playerSelectedWeekId===w.id?'background:var(--aca);border-color:var(--ac);color:var(--ac)':''}" onclick="selectPlayerWeek('${w.id}')">
-      <span>${esc(w.label)}</span><span class="small">${fmtDate(w.startDate)}</span>
-    </div>
-  `).join('') : `<div class="small">Todavía no tenés sesiones cargadas.</div>`;
-  if(weeks.length && !weeks.find(w=>w.id===playerSelectedWeekId)) playerSelectedWeekId = weeks[0].id;
-  if(!weeks.length) playerSelectedWeekId = null;
-  renderPlayerWeekDetail();
-}
-function selectPlayerWeek(id){ playerSelectedWeekId = id; renderPlayerSessionsTab(); }
-function renderPlayerWeekDetail(){
-  const detail = document.getElementById('player-week-detail');
-  if(!detail) return;
-  const w = (db.weeks||[]).find(x=>x.id===playerSelectedWeekId);
-  if(!w){ detail.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Todavía no tenés sesiones</div><div class="empty-sub">Tu coach todavía no cargó ninguna sesión para vos. Mientras tanto podés registrar tus entrenamientos vos mismo en <b>"+ Registrar"</b>.</div></div>`; return; }
-  detail.innerHTML = `
-    <div class="flex justify-between items-center flex-wrap gap8 mb16">
-      <div class="flex items-center gap10">
-        <div style="font-weight:700;font-size:15px">${esc(w.label)}</div>
-        <span class="badge ${PHASE_COLORS[w.phase]||'badge-gr'}">${PHASE_LABELS[w.phase]||w.phase}</span>
-        <span class="small">${fmtDate(w.startDate)}</span>
-      </div>
-      <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Imprimir</button>
-    </div>
-    ${w.notes?`<div class="small mb16">📝 ${esc(w.notes)}</div>`:''}
-    <div id="player-items"></div>
-  `;
-  const itemsEl = document.getElementById('player-items');
-  itemsEl.innerHTML = (w.items||[]).map(it=>buildSessionItemHTML(w, it, 'pl')).join('') || `<div class="empty">Esta sesión no tiene ejercicios.</div>`;
-  (w.items||[]).forEach(it=>updateItemSuggestion(w, it, 'pl'));
 }
 // Self-service logging: the athlete picks any exercise from the catalog and logs their
 // own weight × reps whenever they want, without needing the coach to have built a
@@ -2123,9 +1714,14 @@ async function savePlayerLog(){
 }
 function renderPlayerProgressTab(){
   document.getElementById('player-tab-progress').innerHTML = `
+    <div class="sec-title mb12">Evolución de Rendimiento</div>
+    <div class="small mb16">Mirá si venís mejorando o bajando tu RM estimado, agrupado por semana, mes o año.</div>
+    <div id="player-perf-section" class="mb20"></div>
+    <div class="sec-title mb12">Progresión por Ejercicio</div>
     <div class="small mb16">Cómo fue evolucionando tu peso × repeticiones en cada ejercicio, sesión a sesión.</div>
     ${buildProgressionSectionsHTML(playerAthleteId, false)}
   `;
+  renderPerformanceSection(playerAthleteId, 'player-perf-section');
 }
 
 /* ═══════════════════════════════════════════════════════════════

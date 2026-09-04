@@ -11,17 +11,11 @@ Los datos viven en la nube (**Supabase**), no en el navegador: el coach entra co
 - **Ejercicios**: catálogo con Sentadilla trasera, Sentadilla al cajón, Peso muerto (Despegue), Banco plano y Dominadas lastradas — más los que quieras agregar. Las dominadas se tratan como carga **relativa al peso corporal** (lastre agregado, puede ser negativo si se usa asistencia).
 - **Estimar RM**: cargás peso × repeticiones de un test y calcula el 1RM estimado (fórmulas Epley, Brzycki, Lombardi o promedio, configurable en Ajustes).
 - **Progresión por ejercicio (sobrecarga progresiva)**: en el perfil de cada alumno, cada ejercicio tiene su propia tabla con **todo el historial de peso × repeticiones sesión a sesión**, con la variación (▲/▼ kg) contra el registro anterior.
-- **Planificación individual por sesión**:
-  - El **RM cambia día a día**: antes de ir a la carga de trabajo, podés cargar un **chequeo del día** (una serie de aproximación) y la app recalcula al instante el peso sugerido para ese %1RM en base a cómo está el atleta *hoy*.
-  - **Presets de sesión** (opcional): esquema de %1RM/series/reps reutilizable, se carga en la sesión de un alumno puntual.
-  - Después de la serie de trabajo cargás lo que realmente levantó (peso × reps × RPE) y el sistema decide si conviene **actualizar el RM de referencia**.
-  - Vista imprimible (🖨) para llevar la planilla al gimnasio.
-- **Historial**: todos los registros de RM por atleta/ejercicio (tests, chequeos del día, sesiones y autogestión) con gráfico de progresión.
+- **Evolución de Rendimiento**: gráfico por ejercicio que agrupa los registros de RM de cada alumno por **semana, mes o año** (elegible con un chip) y muestra si viene **mejorando o bajando** — con un resumen en texto ("▲ Mejoró 15%" / "▼ Bajó 8%") comparando el primer y el último período. Disponible tanto en el perfil del atleta (coach) como en "Mi Progreso" (Modo Jugador).
+- **Historial**: todos los registros de RM por atleta/ejercicio (tests y autogestión) con gráfico de progresión.
 - **Modo Jugador**: cada alumno entra desde **su propio celular** con el link `?jugador` (ver más abajo), sin login — solo toca su nombre (y un PIN opcional). Ahí puede:
-  - ver **su semana** (sesiones del coach, con el %1RM de cada ejercicio),
-  - **+ Registrar**: cargar cualquier ejercicio por su cuenta, sin depender de que el coach le arme una sesión,
-  - hacer su propio **chequeo del día** y cargar lo que realmente levantó (peso × reps × RPE),
-  - ver **su progreso** semana a semana por ejercicio.
+  - **+ Registrar**: cargar cualquier ejercicio por su cuenta (peso × reps), cuando quiera, sin depender del coach,
+  - ver **su progreso**: la evolución de su RM semana/mes/año y su historial peso × reps por ejercicio.
 - **Gestión de bajas**: dar de baja a un atleta que dejó de entrenar (reversible, no borra nada) o eliminarlo permanentemente.
 - **Ajustes**: fórmula de cálculo, cerrar sesión, y exportar/importar backup en JSON.
 
@@ -34,8 +28,8 @@ Los datos viven en la nube (**Supabase**), no en el navegador: el coach entra co
 
 Todo el backend vive en un proyecto de Supabase (gratis):
 
-- **Tablas** `athletes`, `exercises`, `records`, `templates`, `weeks`, `coach_settings` — protegidas con Row Level Security: cada fila pertenece a un `coach_id` y solo ese coach autenticado puede leerla o escribirla.
-- **Funciones RPC** `player_list_athletes`, `player_get_state`, `player_add_record`, `player_update_week_item` — corren con privilegios elevados (`security definer`) pero verifican el PIN del atleta del lado del servidor y solo exponen/tocan los datos de ESE atleta puntual. Así el Modo Jugador funciona sin que el atleta tenga una cuenta.
+- **Tablas** `athletes`, `exercises`, `records`, `coach_settings` — protegidas con Row Level Security: cada fila pertenece a un `coach_id` y solo ese coach autenticado puede leerla o escribirla. (El esquema también incluye `templates` y `weeks`, remanentes de la vieja Planificación por sesión — ya no se usan desde la app, quedaron sin tocar por si tenían datos.)
+- **Funciones RPC** `player_list_athletes`, `player_get_state`, `player_add_record` — corren con privilegios elevados (`security definer`) pero verifican el PIN del atleta del lado del servidor y solo exponen/tocan los datos de ESE atleta puntual. Así el Modo Jugador funciona sin que el atleta tenga una cuenta.
 - El esquema completo (tablas, RLS, funciones) está pensado para correrse una sola vez desde el SQL Editor de Supabase.
 - La URL del proyecto y la clave pública (`anon`/`publishable`) están embebidas en `index.html` — es el modelo normal de Supabase: la clave pública es segura de exponer porque RLS es lo que realmente protege los datos, no el secreto de la clave.
 
