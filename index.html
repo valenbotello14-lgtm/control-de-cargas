@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Cargas</title>
+<style>
+/* ══ RESET & TOKENS ══════════════════════════════════════════ */
+:root{
+  --ac:#22C55E;--acd:#16A34A;--aca:rgba(34,197,94,.14);
+  --dk:#0A0C0F;--dk2:#101319;--dk3:#161B23;--dk4:#1C222C;
+  --card:#141922;--bdr:#232A36;--bdr2:#1C2330;
+  --w:#FFFFFF;--g0:#F4F6F9;--g1:#DCE3EE;--g2:#98A4B8;--g3:#5C6779;--g4:#2C3441;
+  --bl:#3B82F6;--pu:#8B5CF6;--re:#EF4444;--ye:#F59E0B;--cy:#0EA5E9;
+  --fd:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --fb:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --r6:6px;--r8:8px;--r12:12px;--r16:16px;
+  --sh:0 1px 3px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;scroll-behavior:smooth}
+body{background:var(--dk);color:var(--w);font-family:var(--fb);font-size:13px;line-height:1.5;min-height:100%}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--dk)}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ac)}
+button,input,select,textarea{font-family:var(--fb)}
+input[type=number]::-webkit-inner-spin-button{opacity:.5}
+a{color:var(--ac);text-decoration:none}
+
+/* ══ LAYOUT ══════════════════════════════════════════════════ */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:222px;min-width:222px;background:var(--dk2);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;transition:width .2s}
+.sidebar.collapsed{width:60px;min-width:60px}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:52px;background:var(--dk2);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 22px;gap:14px;flex-shrink:0}
+.content{flex:1;overflow-y:auto;padding:26px 26px 48px}
+.panel{display:none}
+.panel.active{display:block}
+
+.sb-logo{padding:16px 16px 12px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;align-items:center;gap:10px}
+.sb-logo-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--ac),var(--acd));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.sb-logo-text{overflow:hidden;white-space:nowrap}
+.sb-logo-main{font-size:15px;font-weight:800;letter-spacing:.2px;color:var(--w)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--g3);text-transform:uppercase;letter-spacing:.8px}
+.sidebar.collapsed .sb-logo-text{display:none}
+
+.sb-nav{flex:1;overflow-y:auto;padding:10px 8px}
+.sb-sec-label{font-size:9px;font-weight:700;color:var(--g4);text-transform:uppercase;letter-spacing:1px;padding:12px 10px 6px}
+.sidebar.collapsed .sb-sec-label{display:none}
+.sb-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--r8);cursor:pointer;color:var(--g2);font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden}
+.sb-item:hover{background:var(--dk3);color:var(--w)}
+.sb-item.active{background:var(--aca);color:var(--ac)}
+.sb-item-icon{width:18px;text-align:center;flex-shrink:0;font-size:14px}
+.sidebar.collapsed .sb-item span:last-child{display:none}
+.sb-toggle{padding:10px;border-top:1px solid var(--bdr);cursor:pointer;color:var(--g3);text-align:center;font-size:13px;flex-shrink:0}
+.sb-toggle:hover{color:var(--ac)}
+
+.topbar-title{font-size:16px;font-weight:700}
+.topbar-sub{font-size:11px;color:var(--g3)}
+.topbar-spacer{flex:1}
+.coach-badge{font-size:11px;color:var(--g3);display:flex;align-items:center;gap:6px}
+
+/* ══ BUTTONS ═════════════════════════════════════════════════ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r8);border:1px solid var(--bdr);background:var(--dk3);color:var(--w);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s}
+.btn:hover{border-color:var(--g3)}
+.btn-primary{background:var(--ac);border-color:var(--ac);color:#06170D}
+.btn-primary:hover{background:var(--acd);border-color:var(--acd)}
+.btn-ghost{background:transparent;border-color:transparent}
+.btn-ghost:hover{background:var(--dk3);border-color:var(--bdr)}
+.btn-danger{color:var(--re)}
+.btn-sm{padding:6px 10px;font-size:11.5px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ══ CARDS / GRID ════════════════════════════════════════════ */
+.g-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r12);padding:16px}
+.stat-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r12);padding:16px}
+.stat-num{font-size:26px;font-weight:800;color:var(--ac)}
+.stat-label{font-size:11px;color:var(--g3);text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
+.sec{margin-bottom:26px}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.sec-title{font-size:15px;font-weight:700}
+.sec-title .ac{color:var(--ac)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* ══ FORM ════════════════════════════════════════════════════ */
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:10px;font-weight:600;color:var(--g3);text-transform:uppercase;letter-spacing:.7px}
+.form-input{background:var(--dk3);border:1px solid var(--bdr);border-radius:var(--r8);padding:8px 11px;color:var(--w);font-size:13px;transition:border-color .15s;width:100%}
+.form-input:focus{outline:none;border-color:var(--ac)}
+.form-input::placeholder{color:var(--g4)}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235C6779'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.form-row{display:grid;gap:12px}
+.form-row.c2{grid-template-columns:1fr 1fr}
+.form-row.c3{grid-template-columns:1fr 1fr 1fr}
+.form-row.c4{grid-template-columns:1fr 1fr 1fr 1fr}
+.form-hint{font-size:10.5px;color:var(--g3);margin-top:2px}
+
+/* ══ TABLE ═══════════════════════════════════════════════════ */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--bdr);border-radius:var(--r12)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;padding:10px 12px;background:var(--dk3);color:var(--g3);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:1px solid var(--bdr)}
+td{padding:9px 12px;border-bottom:1px solid var(--bdr2);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--dk3)}
+td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
+
+/* ══ BADGES / CHIPS ══════════════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.badge-ac{background:var(--aca);color:var(--ac)}
+.badge-bl{background:rgba(59,130,246,.14);color:var(--bl)}
+.badge-pu{background:rgba(139,92,246,.14);color:var(--pu)}
+.badge-ye{background:rgba(245,158,11,.14);color:var(--ye)}
+.badge-re{background:rgba(239,68,68,.14);color:var(--re)}
+.badge-gr{background:var(--dk4);color:var(--g2)}
+.chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;background:var(--dk3);border:1px solid var(--bdr);font-size:11.5px;color:var(--g2);cursor:pointer}
+.chip.active{background:var(--aca);border-color:var(--ac);color:var(--ac)}
+
+/* ══ ATHLETE CARD ════════════════════════════════════════════ */
+.ath-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r12);padding:16px;cursor:pointer;transition:border-color .12s}
+.ath-card:hover{border-color:var(--ac)}
+.ath-card-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.ath-avatar{width:38px;height:38px;border-radius:10px;background:var(--dk4);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--ac);flex-shrink:0}
+.ath-name{font-weight:700;font-size:13.5px}
+.ath-meta{font-size:10.5px;color:var(--g3)}
+.ath-rm-row{display:flex;justify-content:space-between;font-size:11.5px;padding:4px 0;color:var(--g2)}
+.ath-rm-row b{color:var(--w)}
+
+/* ══ MODAL ═══════════════════════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal{background:var(--dk2);border:1px solid var(--bdr);border-radius:var(--r16);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;padding:22px}
+.modal.wide{max-width:820px}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close{cursor:pointer;color:var(--g3);font-size:18px;line-height:1}
+.modal-close:hover{color:var(--w)}
+.modal-ft{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+
+/* ══ RM ESTIMATOR RESULT ═════════════════════════════════════ */
+.rm-result{background:var(--dk3);border:1px solid var(--bdr);border-radius:var(--r12);padding:18px;text-align:center;margin-top:6px}
+.rm-result-num{font-size:34px;font-weight:800;color:var(--ac)}
+.rm-result-label{font-size:10.5px;color:var(--g3);text-transform:uppercase;letter-spacing:.7px;margin-top:2px}
+.rm-formula-note{font-size:10.5px;color:var(--g4);margin-top:8px}
+
+/* ══ PLAN GRID ═══════════════════════════════════════════════ */
+.plan-item{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r12);padding:14px 16px;margin-bottom:10px}
+.plan-item-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.plan-ex-name{font-weight:700;font-size:13.5px}
+.plan-sub{display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--g2);margin-bottom:10px}
+.plan-sub b{color:var(--w)}
+.plan-suggest{background:var(--aca);border:1px solid var(--ac);border-radius:var(--r8);padding:10px 14px;display:inline-flex;flex-direction:column;gap:1px;margin-bottom:10px}
+.plan-suggest-kg{font-size:20px;font-weight:800;color:var(--ac)}
+.plan-suggest-label{font-size:9.5px;color:var(--ac);text-transform:uppercase;letter-spacing:.6px;opacity:.85}
+.plan-actual-row{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+.plan-actual-row .form-group{width:110px}
+
+/* ══ EMPTY STATE ═════════════════════════════════════════════ */
+.empty{text-align:center;padding:50px 20px;color:var(--g3)}
+.empty-icon{font-size:34px;margin-bottom:10px;opacity:.5}
+.empty-title{font-size:14px;font-weight:600;color:var(--g2);margin-bottom:4px}
+.empty-sub{font-size:11.5px}
+
+/* ══ TOAST ═══════════════════════════════════════════════════ */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--dk2);border:1px solid var(--ac);border-radius:var(--r8);padding:12px 18px;font-size:12.5px;font-weight:600;box-shadow:var(--sh);z-index:300;display:flex;align-items:center;gap:8px}
+.toast.err{border-color:var(--re)}
+
+/* ══ MISC ════════════════════════════════════════════════════ */
+.sparkline{display:block}
+.hr{height:1px;background:var(--bdr);margin:16px 0}
+.small{font-size:11px;color:var(--g3)}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}.mb20{margin-bottom:20px}
+.flex{display:flex}.gap8{gap:8px}.gap10{gap:10px}.gap12{gap:12px}.items-center{align-items:center}.justify-between{justify-content:space-between}.flex-wrap{flex-wrap:wrap}
+.tag-phase{padding:2px 8px;border-radius:5px;font-size:9.5px;font-weight:700;text-transform:uppercase}
+
+@media(max-width:900px){
+  .sidebar{position:absolute;z-index:50;height:100%}
+  .form-row.c2,.form-row.c3,.form-row.c4{grid-template-columns:1fr 1fr}
+  .content{padding:16px 14px 40px}
+}
+
+/* ══ PRINT ═══════════════════════════════════════════════════ */
+@media print{
+  body{background:#fff;color:#000}
+  .sidebar,.topbar,.btn,.no-print{display:none!important}
+  .app{display:block;height:auto}
+  .content{overflow:visible;padding:0}
+  .print-sheet{display:block!important}
+  .card,.plan-item{background:#fff;border:1px solid #999;color:#000;break-inside:avoid}
+  .plan-suggest{background:#eee;border-color:#999}
+  .plan-suggest-kg,.plan-ex-name{color:#000}
+  th{background:#eee;color:#333}
+}
+</style>
+</head>
+<body>
+
+<div class="app" id="app" style="display:none">
+  <!-- ══ SIDEBAR ══ -->
+  <div class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-mark">🏋️</div>
+      <div class="sb-logo-text">
+        <div class="sb-logo-main">Control de Cargas</div>
+        <div class="sb-logo-sub">Estimación de RM</div>
+      </div>
+    </div>
+    <div class="sb-nav">
+      <div class="sb-sec-label">General</div>
+      <div class="sb-item active" data-panel="dashboard" onclick="nav('dashboard')"><span class="sb-item-icon">📊</span><span>Dashboard</span></div>
+      <div class="sb-item" data-panel="athletes" onclick="nav('athletes')"><span class="sb-item-icon">👤</span><span>Atletas</span></div>
+      <div class="sb-sec-label">Fuerza</div>
+      <div class="sb-item" data-panel="estimate" onclick="nav('estimate')"><span class="sb-item-icon">🎯</span><span>Estimar RM</span></div>
+      <div class="sb-item" data-panel="planning" onclick="nav('planning')"><span class="sb-item-icon">📅</span><span>Planificación</span></div>
+      <div class="sb-item" data-panel="history" onclick="nav('history')"><span class="sb-item-icon">📈</span><span>Historial</span></div>
+      <div class="sb-item" data-panel="exercises" onclick="nav('exercises')"><span class="sb-item-icon">🏋️</span><span>Ejercicios</span></div>
+      <div class="sb-sec-label">Sistema</div>
+      <div class="sb-item" data-panel="settings" onclick="nav('settings')"><span class="sb-item-icon">⚙️</span><span>Ajustes</span></div>
+    </div>
+    <div class="sb-toggle" onclick="toggleSidebar()">◀</div>
+  </div>
+
+  <!-- ══ MAIN ══ -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub" id="topbar-sub">Resumen general</div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="coach-badge" id="coach-badge">👋 Coach</div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="g-auto mb20" id="dash-stats"></div>
+        <div class="sec">
+          <div class="sec-hd"><div class="sec-title">Atletas</div><button class="btn btn-ghost btn-sm" onclick="nav('athletes')">Ver todos →</button></div>
+          <div class="g-auto" id="dash-athletes"></div>
+        </div>
+        <div class="sec">
+          <div class="sec-hd"><div class="sec-title">Últimas estimaciones de RM</div><button class="btn btn-ghost btn-sm" onclick="nav('history')">Ver historial →</button></div>
+          <div class="tbl-wrap"><table>
+            <thead><tr><th>Fecha</th><th>Atleta</th><th>Ejercicio</th><th>Peso × Reps</th><th>RM estimado</th><th></th></tr></thead>
+            <tbody id="dash-recent"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- ATHLETES -->
+      <div class="panel" id="panel-athletes">
+        <div class="sec-hd">
+          <div class="toolbar">
+            <input class="form-input" style="width:210px" placeholder="Buscar atleta…" oninput="filterAthletes(this.value)">
+          </div>
+          <button class="btn btn-primary" onclick="openAthleteModal()">+ Nuevo Atleta</button>
+        </div>
+        <div class="g-auto" id="athletes-grid"></div>
+      </div>
+
+      <!-- ATHLETE PROFILE -->
+      <div class="panel" id="panel-athlete-profile">
+        <button class="btn btn-ghost btn-sm mb16" onclick="nav('athletes')">← Volver a Atletas</button>
+        <div id="athlete-profile-content"></div>
+      </div>
+
+      <!-- ESTIMATE RM -->
+      <div class="panel" id="panel-estimate">
+        <div class="card" style="max-width:640px">
+          <div class="sec-title mb16">🎯 Calculadora de RM</div>
+          <div class="form-row c2 mb12">
+            <div class="form-group">
+              <label class="form-label">Atleta</label>
+              <select class="form-input form-select" id="est-athlete" onchange="updateEstimate()"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ejercicio</label>
+              <select class="form-input form-select" id="est-exercise" onchange="updateEstimate()"></select>
+            </div>
+          </div>
+          <div class="form-row c3 mb12">
+            <div class="form-group">
+              <label class="form-label" id="est-weight-label">Peso levantado (kg)</label>
+              <input class="form-input" type="number" step="0.5" id="est-weight" placeholder="100" oninput="updateEstimate()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Repeticiones</label>
+              <input class="form-input" type="number" min="1" max="15" id="est-reps" placeholder="5" oninput="updateEstimate()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha</label>
+              <input class="form-input" type="date" id="est-date">
+            </div>
+          </div>
+          <div class="form-group mb12">
+            <label class="form-label">Nota (opcional)</label>
+            <input class="form-input" id="est-note" placeholder="Test inicial, RPE 9, sensaciones…">
+          </div>
+          <div class="rm-result" id="est-result">
+            <div class="rm-result-num" id="est-result-num">—</div>
+            <div class="rm-result-label" id="est-result-label">RM estimado</div>
+            <div class="rm-formula-note" id="est-formula-note"></div>
+          </div>
+          <div class="flex justify-between items-center" style="margin-top:16px">
+            <label class="small flex items-center gap8"><input type="checkbox" id="est-set-current" checked> Usar como RM actual del atleta</label>
+            <button class="btn btn-primary" onclick="saveEstimate()">💾 Guardar registro</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLANNING -->
+      <div class="panel" id="panel-planning">
+        <div class="sec-hd">
+          <div class="toolbar">
+            <div class="chip active" data-tab="templates" onclick="planTab('templates')">Plantillas semanales</div>
+            <div class="chip" data-tab="athlete-weeks" onclick="planTab('athlete-weeks')">Semanas por atleta</div>
+          </div>
+        </div>
+        <div id="plan-templates-view"></div>
+        <div id="plan-athlete-weeks-view" style="display:none"></div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="panel" id="panel-history">
+        <div class="sec-hd">
+          <div class="toolbar">
+            <select class="form-input form-select" style="width:180px" id="hist-athlete" onchange="renderHistory()"></select>
+            <select class="form-input form-select" style="width:200px" id="hist-exercise" onchange="renderHistory()"></select>
+          </div>
+        </div>
+        <div class="card mb16" id="hist-chart-card" style="display:none">
+          <div class="sec-title mb12" style="font-size:12.5px;color:var(--g2)">Progresión de RM estimado</div>
+          <div id="hist-chart"></div>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Fecha</th><th>Atleta</th><th>Ejercicio</th><th>Peso × Reps</th><th>RM estimado</th><th>Origen</th><th>Nota</th><th></th></tr></thead>
+          <tbody id="hist-tbody"></tbody>
+        </table></div>
+      </div>
+
+      <!-- EXERCISES -->
+      <div class="panel" id="panel-exercises">
+        <div class="sec-hd">
+          <div class="sec-title">Catálogo de Ejercicios</div>
+          <button class="btn btn-primary" onclick="openExerciseModal()">+ Nuevo Ejercicio</button>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Ejercicio</th><th>Tipo</th><th>Incremento redondeo</th><th></th></tr></thead>
+          <tbody id="exercises-tbody"></tbody>
+        </table></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="panel" id="panel-settings">
+        <div class="card mb16" style="max-width:640px">
+          <div class="sec-title mb16">Datos del Coach</div>
+          <div class="form-row c2">
+            <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="set-coach-name" placeholder="Tu nombre"></div>
+            <div class="form-group"><label class="form-label">Organización / Club</label><input class="form-input" id="set-org" placeholder="Club / Equipo"></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="saveSettings()">Guardar</button>
+        </div>
+        <div class="card mb16" style="max-width:640px">
+          <div class="sec-title mb16">Cálculo de RM</div>
+          <div class="form-group mb12">
+            <label class="form-label">Fórmula de estimación</label>
+            <select class="form-input form-select" id="set-formula">
+              <option value="epley">Epley — 1RM = peso × (1 + reps/30)</option>
+              <option value="brzycki">Brzycki — 1RM = peso × 36/(37-reps)</option>
+              <option value="lombardi">Lombardi — 1RM = peso × reps^0.10</option>
+              <option value="average">Promedio de las tres</option>
+            </select>
+            <div class="form-hint">Se aplica a todas las estimaciones. Más preciso con series de hasta 6-8 repeticiones.</div>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">Guardar</button>
+        </div>
+        <div class="card mb16" style="max-width:640px">
+          <div class="sec-title mb16">Respaldo de Datos</div>
+          <div class="small mb12">Todo se guarda en este navegador (localStorage). No hay servidor: exportá seguido para no perder información si cambiás de dispositivo o borrás el caché.</div>
+          <div class="flex gap10 flex-wrap">
+            <button class="btn" onclick="exportData()">⬇ Exportar backup (JSON)</button>
+            <button class="btn" onclick="document.getElementById('import-file').click()">⬆ Importar backup</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this.files[0])">
+            <button class="btn btn-danger" onclick="resetData()">🗑 Borrar todos los datos</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ ATHLETE MODAL ══ -->
+<div class="modal-overlay" id="athlete-modal" style="display:none" onclick="closeModal(event,'athlete-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="modal-hd"><div class="modal-title" id="athlete-modal-title">Nuevo Atleta</div><div class="modal-close" onclick="closeModal(null,'athlete-modal')">✕</div></div>
+  <div class="form-row c2 mb12">
+    <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="ath-first" placeholder="Juan"></div>
+    <div class="form-group"><label class="form-label">Apellido *</label><input class="form-input" id="ath-last" placeholder="Pérez"></div>
+  </div>
+  <div class="form-row c3 mb12">
+    <div class="form-group"><label class="form-label">Peso corporal (kg)</label><input class="form-input" type="number" step="0.1" id="ath-bw" placeholder="78.0"></div>
+    <div class="form-group"><label class="form-label">Deporte</label><input class="form-input" id="ath-sport" placeholder="Rugby, fútbol…"></div>
+    <div class="form-group"><label class="form-label">Próximo partido</label><input class="form-input" type="date" id="ath-match"></div>
+  </div>
+  <div class="form-group mb12">
+    <label class="form-label">Notas</label>
+    <input class="form-input" id="ath-notes" placeholder="Lesiones, observaciones…">
+  </div>
+  <div class="modal-ft">
+    <button class="btn" id="athlete-delete-btn" style="display:none" onclick="deleteAthleteFromModal()">Eliminar</button>
+    <button class="btn btn-ghost" onclick="closeModal(null,'athlete-modal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveAthlete()">Guardar</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ EXERCISE MODAL ══ -->
+<div class="modal-overlay" id="exercise-modal" style="display:none" onclick="closeModal(event,'exercise-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="modal-hd"><div class="modal-title" id="exercise-modal-title">Nuevo Ejercicio</div><div class="modal-close" onclick="closeModal(null,'exercise-modal')">✕</div></div>
+  <div class="form-group mb12">
+    <label class="form-label">Nombre *</label>
+    <input class="form-input" id="ex-name" placeholder="Ej: Press militar">
+  </div>
+  <div class="form-row c2 mb12">
+    <div class="form-group">
+      <label class="form-label">Tipo de carga</label>
+      <select class="form-input form-select" id="ex-bw">
+        <option value="0">Barra / peso total levantado</option>
+        <option value="1">Relativo al peso corporal (ej. dominadas)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Incremento de redondeo (kg)</label>
+      <input class="form-input" type="number" step="0.25" id="ex-inc" placeholder="2.5">
+    </div>
+  </div>
+  <div class="form-hint mb12" id="ex-bw-hint">"Relativo al peso corporal" trata el peso cargado como <b>lastre agregado</b> (puede ser negativo si usa asistencia); el 1RM total se calcula sumando el peso corporal del atleta.</div>
+  <div class="modal-ft">
+    <button class="btn" id="exercise-delete-btn" style="display:none" onclick="deleteExerciseFromModal()">Eliminar</button>
+    <button class="btn btn-ghost" onclick="closeModal(null,'exercise-modal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveExercise()">Guardar</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ WEEK TEMPLATE MODAL ══ -->
+<div class="modal-overlay" id="template-modal" style="display:none" onclick="closeModal(event,'template-modal')">
+<div class="modal wide" onclick="event.stopPropagation()">
+  <div class="modal-hd"><div class="modal-title" id="template-modal-title">Nueva Plantilla Semanal</div><div class="modal-close" onclick="closeModal(null,'template-modal')">✕</div></div>
+  <div class="form-row c2 mb12">
+    <div class="form-group"><label class="form-label">Nombre de la semana *</label><input class="form-input" id="tpl-label" placeholder="Semana 1 — Base"></div>
+    <div class="form-group"><label class="form-label">Fase</label>
+      <select class="form-input form-select" id="tpl-phase">
+        <option value="base">Base</option>
+        <option value="fuerza">Fuerza</option>
+        <option value="potencia">Potencia</option>
+        <option value="mantenimiento">Mantenimiento</option>
+        <option value="descarga">Descarga</option>
+        <option value="competencia">Competencia / Taper</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group mb16"><label class="form-label">Notas</label><input class="form-input" id="tpl-notes" placeholder="Objetivo de la semana…"></div>
+  <div class="flex justify-between items-center mb12">
+    <div class="sec-title" style="font-size:13px">Ejercicios de la semana</div>
+    <button class="btn btn-ghost btn-sm" onclick="addTplItemRow()">+ Agregar ejercicio</button>
+  </div>
+  <div id="tpl-items"></div>
+  <div class="modal-ft">
+    <button class="btn" id="template-delete-btn" style="display:none" onclick="deleteTemplateFromModal()">Eliminar</button>
+    <button class="btn btn-ghost" onclick="closeModal(null,'template-modal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveTemplate()">Guardar Plantilla</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ APPLY TEMPLATE MODAL ══ -->
+<div class="modal-overlay" id="apply-modal" style="display:none" onclick="closeModal(event,'apply-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="modal-hd"><div class="modal-title">Aplicar plantilla a atletas</div><div class="modal-close" onclick="closeModal(null,'apply-modal')">✕</div></div>
+  <div class="form-row c2 mb12">
+    <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="apply-date"></div>
+    <div class="form-group"><label class="form-label">Etiqueta (opcional)</label><input class="form-input" id="apply-label" placeholder="Igual a la plantilla si se deja vacío"></div>
+  </div>
+  <div class="form-group mb12">
+    <label class="form-label">Atletas</label>
+    <div id="apply-athletes-list" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;border:1px solid var(--bdr);border-radius:8px;padding:10px"></div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeModal(null,'apply-modal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="confirmApplyTemplate()">Aplicar</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ NEW ATHLETE WEEK MODAL ══ -->
+<div class="modal-overlay" id="newweek-modal" style="display:none" onclick="closeModal(event,'newweek-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="modal-hd"><div class="modal-title">Nueva Semana</div><div class="modal-close" onclick="closeModal(null,'newweek-modal')">✕</div></div>
+  <div class="form-group mb12">
+    <label class="form-label">Basar en plantilla (opcional)</label>
+    <select class="form-input form-select" id="nw-template"><option value="">— Semana en blanco —</option></select>
+  </div>
+  <div class="form-row c2 mb12">
+    <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="nw-date"></div>
+    <div class="form-group"><label class="form-label">Etiqueta</label><input class="form-input" id="nw-label" placeholder="Semana 1"></div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeModal(null,'newweek-modal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="confirmNewWeek()">Crear</button>
+  </div>
+</div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════
+   DATA LAYER
+   ═══════════════════════════════════════════════════════════════ */
+const DB_KEY = 'cdc_db_v1';
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return '—'; const d=new Date(iso+'T00:00:00'); return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+const DEFAULT_EXERCISES = [
+  {id:'sentadilla-trasera', name:'Sentadilla trasera', bodyweightRelative:false, increment:2.5, builtin:true},
+  {id:'sentadilla-cajon',   name:'Sentadilla al cajón', bodyweightRelative:false, increment:2.5, builtin:true},
+  {id:'despegue',           name:'Peso muerto (Despegue)', bodyweightRelative:false, increment:2.5, builtin:true},
+  {id:'banco-plano',        name:'Banco plano', bodyweightRelative:false, increment:2.5, builtin:true},
+  {id:'dominadas',          name:'Dominadas (lastradas)', bodyweightRelative:true, increment:1, builtin:true},
+];
+
+function defaultDB(){
+  return {
+    version: 1,
+    settings: { coachName:'', org:'', formula:'epley' },
+    athletes: [],
+    exercises: DEFAULT_EXERCISES.map(e=>Object.assign({},e)),
+    records: [],       // {id, athleteId, exerciseId, date, load, reps, current, source, note}
+    templates: [],      // {id, label, phase, notes, items:[{id, exerciseId, pct, series, repsMin, repsMax, rpe, note}]}
+    weeks: [],           // {id, athleteId, label, phase, notes, startDate, items:[{id, exerciseId, pct, series, repsMin, repsMax, rpe, note, actualLoad, actualReps, actualRpe, actualNote, loggedAt}]}
+  };
+}
+
+let db = null;
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(!raw){ db = defaultDB(); saveDB(); return; }
+    db = JSON.parse(raw);
+    if(!db.exercises || !db.exercises.length) db.exercises = DEFAULT_EXERCISES.map(e=>Object.assign({},e));
+    if(!db.settings) db.settings = {coachName:'',org:'',formula:'epley'};
+    if(!db.templates) db.templates = [];
+    if(!db.weeks) db.weeks = [];
+    if(!db.records) db.records = [];
+    if(!db.athletes) db.athletes = [];
+  }catch(e){
+    console.error('DB load failed, resetting', e);
+    db = defaultDB();
+  }
+}
+function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+/* ═══════════════════════════════════════════════════════════════
+   RM MATH
+   ═══════════════════════════════════════════════════════════════ */
+function estimate1RM(load, reps, formula){
+  formula = formula || (db.settings && db.settings.formula) || 'epley';
+  load = Number(load)||0; reps = Math.max(1, Math.min(15, Number(reps)||1));
+  if(reps===1) return load;
+  const epley    = load*(1+reps/30);
+  const brzycki  = load*36/(37-reps);
+  const lombardi = load*Math.pow(reps,0.10);
+  if(formula==='epley') return epley;
+  if(formula==='brzycki') return reps<37 ? brzycki : epley;
+  if(formula==='lombardi') return lombardi;
+  if(formula==='average') return (epley+(reps<37?brzycki:epley)+lombardi)/3;
+  return epley;
+}
+function formulaLabel(f){
+  return {epley:'Epley',brzycki:'Brzycki',lombardi:'Lombardi',average:'Promedio (Epley+Brzycki+Lombardi)'}[f]||'Epley';
+}
+function getExercise(id){ return (db.exercises||[]).find(e=>e.id===id); }
+function getAthlete(id){ return (db.athletes||[]).find(a=>a.id===id); }
+function athleteName(a){ return a ? (a.firstName+' '+a.lastName).trim() : '—'; }
+
+// total load lifted (for bodyweight-relative exercises, load = added weight)
+function totalLoad(athlete, exercise, load){
+  load = Number(load)||0;
+  if(exercise && exercise.bodyweightRelative) return (Number(athlete && athlete.bodyweight)||0) + load;
+  return load;
+}
+function roundTo(value, inc){
+  inc = Number(inc)||2.5;
+  if(inc<=0) return Math.round(value*10)/10;
+  return Math.round(value/inc)*inc;
+}
+// Given a total 1RM target and an exercise, return the load figure to actually load
+// (subtracting bodyweight back out for bodyweight-relative exercises)
+function loadFromTotal(athlete, exercise, totalTarget, inc){
+  let raw = exercise && exercise.bodyweightRelative
+    ? totalTarget - (Number(athlete && athlete.bodyweight)||0)
+    : totalTarget;
+  return roundTo(raw, inc!=null?inc:(exercise?exercise.increment:2.5));
+}
+
+// Current RM record for athlete+exercise: prefer one flagged current, else most recent by date
+function getCurrentRecord(athleteId, exerciseId){
+  const recs = (db.records||[]).filter(r=>r.athleteId===athleteId && r.exerciseId===exerciseId);
+  if(!recs.length) return null;
+  const flagged = recs.find(r=>r.current);
+  if(flagged) return flagged;
+  return recs.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+}
+function getCurrentTotalRM(athleteId, exerciseId){
+  const r = getCurrentRecord(athleteId, exerciseId);
+  if(!r) return null;
+  return recEstTotal(r);
+}
+function recEstTotal(r){
+  const ath = getAthlete(r.athleteId), ex = getExercise(r.exerciseId);
+  const tl = totalLoad(ath, ex, r.load);
+  return estimate1RM(tl, r.reps, db.settings.formula);
+}
+function setCurrentRecord(recordId){
+  const rec = db.records.find(r=>r.id===recordId);
+  if(!rec) return;
+  db.records.forEach(r=>{ if(r.athleteId===rec.athleteId && r.exerciseId===rec.exerciseId) r.current=false; });
+  rec.current = true;
+  saveDB();
+}
+
+function addRecord(athleteId, exerciseId, date, load, reps, note, source, setCurrent){
+  const rec = {id:uid(), athleteId, exerciseId, date: date||todayISO(), load:Number(load), reps:Number(reps), note:note||'', source:source||'test', current:false};
+  db.records.push(rec);
+  if(setCurrent){
+    db.records.forEach(r=>{ if(r.id!==rec.id && r.athleteId===athleteId && r.exerciseId===exerciseId) r.current=false; });
+    rec.current = true;
+  }
+  saveDB();
+  return rec;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════════ */
+let currentPanel = 'dashboard';
+let navData = {};
+const PANEL_META = {
+  dashboard:['Dashboard','Resumen general'],
+  athletes:['Atletas','Gestión de atletas'],
+  'athlete-profile':['Perfil del Atleta',''],
+  estimate:['Estimar RM','Calculadora rápida de 1RM'],
+  planning:['Planificación','Plantillas y cargas semanales'],
+  history:['Historial','Registros de RM y progresión'],
+  exercises:['Ejercicios','Catálogo de movimientos'],
+  settings:['Ajustes','Configuración de la app'],
+};
+
+function nav(panel, data){
+  navData = data||{};
+  currentPanel = panel;
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const el = document.getElementById('panel-'+panel);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active', i.dataset.panel===panel));
+  const meta = PANEL_META[panel]||[panel,''];
+  document.getElementById('topbar-title').textContent = meta[0];
+  document.getElementById('topbar-sub').textContent = meta[1];
+
+  if(panel==='dashboard') renderDashboard();
+  else if(panel==='athletes') renderAthletes();
+  else if(panel==='athlete-profile' && navData.id) renderAthleteProfile(navData.id);
+  else if(panel==='estimate') renderEstimatePanel();
+  else if(panel==='planning') renderPlanning();
+  else if(panel==='history') renderHistory(true);
+  else if(panel==='exercises') renderExercises();
+  else if(panel==='settings') renderSettings();
+}
+
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+function toast(msg, isErr){
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast'+(isErr?' err':'');
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 2600);
+}
+
+function closeModal(e, id){
+  if(e && e.target.id!==id) return;
+  document.getElementById(id).style.display = 'none';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════════════════════════════ */
+function renderDashboard(){
+  const aths = db.athletes||[];
+  const recs = (db.records||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${aths.length}</div><div class="stat-label">Atletas</div></div>
+    <div class="stat-card"><div class="stat-num">${(db.exercises||[]).length}</div><div class="stat-label">Ejercicios</div></div>
+    <div class="stat-card"><div class="stat-num">${recs.length}</div><div class="stat-label">Registros de RM</div></div>
+    <div class="stat-card"><div class="stat-num">${(db.weeks||[]).length}</div><div class="stat-label">Semanas planificadas</div></div>
+  `;
+  const preview = aths.slice(0,6);
+  document.getElementById('dash-athletes').innerHTML = preview.length
+    ? preview.map(a=>athleteCardHTML(a)).join('')
+    : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👤</div><div class="empty-title">Sin atletas todavía</div><div class="empty-sub">Cargá tu primer atleta para empezar</div><button class="btn btn-primary" style="margin-top:14px" onclick="nav('athletes');openAthleteModal()">+ Nuevo Atleta</button></div>`;
+
+  const recent = recs.slice(0,8);
+  document.getElementById('dash-recent').innerHTML = recent.length ? recent.map(r=>{
+    const a=getAthlete(r.athleteId), ex=getExercise(r.exerciseId);
+    const est = recEstTotal(r);
+    return `<tr>
+      <td>${fmtDate(r.date)}</td>
+      <td style="cursor:pointer;color:var(--ac)" onclick="viewAthlete('${r.athleteId}')">${esc(athleteName(a))}</td>
+      <td>${esc(ex?ex.name:'—')}</td>
+      <td>${r.load} kg × ${r.reps}</td>
+      <td><b>${est?est.toFixed(1):'—'} kg</b></td>
+      <td>${r.current?'<span class="badge badge-ac">RM actual</span>':''}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" class="empty">Todavía no hay registros de RM.</td></tr>`;
+}
+
+function athleteCardHTML(a){
+  const exs = (db.exercises||[]).slice(0,5);
+  const initials = ((a.firstName||' ')[0]+(a.lastName||' ')[0]).toUpperCase();
+  const rows = exs.map(ex=>{
+    const r = getCurrentRecord(a.id, ex.id);
+    const est = r ? recEstTotal(r) : null;
+    return `<div class="ath-rm-row"><span>${esc(ex.name)}</span><b>${est?est.toFixed(1)+' kg':'—'}</b></div>`;
+  }).join('');
+  return `<div class="ath-card" onclick="viewAthlete('${a.id}')">
+    <div class="ath-card-hd">
+      <div class="ath-avatar">${initials}</div>
+      <div>
+        <div class="ath-name">${esc(athleteName(a))}</div>
+        <div class="ath-meta">${esc(a.sport||'—')}${a.bodyweight?' · '+a.bodyweight+' kg':''}</div>
+      </div>
+    </div>
+    ${rows}
+  </div>`;
+}
+function viewAthlete(id){ nav('athlete-profile',{id}); }
+
+/* ═══════════════════════════════════════════════════════════════
+   ATHLETES
+   ═══════════════════════════════════════════════════════════════ */
+function renderAthletes(){
+  const grid = document.getElementById('athletes-grid');
+  const aths = db.athletes||[];
+  grid.innerHTML = aths.length ? aths.map(a=>athleteCardHTML(a)).join('')
+    : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👤</div><div class="empty-title">Sin atletas</div><div class="empty-sub">Cargá el primero para empezar a estimar RM</div></div>`;
+}
+function filterAthletes(q){
+  q = (q||'').toLowerCase();
+  const grid = document.getElementById('athletes-grid');
+  const list = (db.athletes||[]).filter(a=>athleteName(a).toLowerCase().includes(q) || (a.sport||'').toLowerCase().includes(q));
+  grid.innerHTML = list.length ? list.map(a=>athleteCardHTML(a)).join('') : `<div class="empty" style="grid-column:1/-1">Sin resultados</div>`;
+}
+
+let editingAthleteId = null;
+function openAthleteModal(id){
+  editingAthleteId = id||null;
+  document.getElementById('athlete-modal-title').textContent = id ? 'Editar Atleta' : 'Nuevo Atleta';
+  document.getElementById('athlete-delete-btn').style.display = id ? 'inline-flex' : 'none';
+  const a = id ? getAthlete(id) : null;
+  document.getElementById('ath-first').value = a?a.firstName:'';
+  document.getElementById('ath-last').value = a?a.lastName:'';
+  document.getElementById('ath-bw').value = a?a.bodyweight||'':'';
+  document.getElementById('ath-sport').value = a?a.sport||'':'';
+  document.getElementById('ath-match').value = a?a.nextMatch||'':'';
+  document.getElementById('ath-notes').value = a?a.notes||'':'';
+  document.getElementById('athlete-modal').style.display = 'flex';
+}
+function saveAthlete(){
+  const first = document.getElementById('ath-first').value.trim();
+  const last = document.getElementById('ath-last').value.trim();
+  if(!first || !last){ toast('Nombre y apellido son obligatorios', true); return; }
+  const data = {
+    firstName:first, lastName:last,
+    bodyweight: Number(document.getElementById('ath-bw').value)||0,
+    sport: document.getElementById('ath-sport').value.trim(),
+    nextMatch: document.getElementById('ath-match').value,
+    notes: document.getElementById('ath-notes').value.trim(),
+  };
+  if(editingAthleteId){
+    const idx = db.athletes.findIndex(x=>x.id===editingAthleteId);
+    db.athletes[idx] = Object.assign({}, db.athletes[idx], data);
+  }else{
+    data.id = uid(); data.createdAt = todayISO();
+    db.athletes.push(data);
+  }
+  saveDB();
+  document.getElementById('athlete-modal').style.display = 'none';
+  toast('Atleta guardado');
+  if(currentPanel==='athletes') renderAthletes();
+  else if(currentPanel==='athlete-profile') renderAthleteProfile(editingAthleteId||data.id);
+  else if(currentPanel==='dashboard') renderDashboard();
+}
+function deleteAthleteFromModal(){
+  if(!editingAthleteId) return;
+  if(!confirm('¿Eliminar este atleta y todos sus registros de RM? Esta acción no se puede deshacer.')) return;
+  db.athletes = db.athletes.filter(a=>a.id!==editingAthleteId);
+  db.records = db.records.filter(r=>r.athleteId!==editingAthleteId);
+  db.weeks = db.weeks.filter(w=>w.athleteId!==editingAthleteId);
+  saveDB();
+  document.getElementById('athlete-modal').style.display = 'none';
+  toast('Atleta eliminado');
+  nav('athletes');
+}
+
+function renderAthleteProfile(id){
+  const a = getAthlete(id);
+  if(!a){ document.getElementById('athlete-profile-content').innerHTML = '<p class="empty">Atleta no encontrado</p>'; return; }
+  const exs = db.exercises||[];
+  const rmRows = exs.map(ex=>{
+    const r = getCurrentRecord(a.id, ex.id);
+    const est = r ? recEstTotal(r) : null;
+    return `<tr>
+      <td>${esc(ex.name)}</td>
+      <td><b>${est?est.toFixed(1)+' kg':'—'}</b></td>
+      <td>${r?fmtDate(r.date):'—'}</td>
+      <td>${r?(r.load+' kg × '+r.reps):'—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="quickEstimate('${a.id}','${ex.id}')">+ Registrar</button></td>
+    </tr>`;
+  }).join('');
+
+  const daysToMatch = a.nextMatch ? Math.ceil((new Date(a.nextMatch)-new Date(todayISO()))/86400000) : null;
+
+  document.getElementById('athlete-profile-content').innerHTML = `
+    <div class="flex justify-between items-center mb20 flex-wrap gap12">
+      <div class="flex items-center gap12">
+        <div class="ath-avatar" style="width:52px;height:52px;font-size:18px">${((a.firstName||' ')[0]+(a.lastName||' ')[0]).toUpperCase()}</div>
+        <div>
+          <div style="font-size:20px;font-weight:800">${esc(athleteName(a))}</div>
+          <div class="small">${esc(a.sport||'—')}${a.bodyweight?' · '+a.bodyweight+' kg':''}${daysToMatch!=null?' · Próximo partido en '+daysToMatch+' días':''}</div>
+        </div>
+      </div>
+      <div class="flex gap8">
+        <button class="btn btn-ghost btn-sm" onclick="openAthleteModal('${a.id}')">✎ Editar</button>
+        <button class="btn btn-sm" onclick="nav('planning');planTab('athlete-weeks');selectAthleteWeek('${a.id}')">📅 Planificación</button>
+        <button class="btn btn-primary btn-sm" onclick="nav('estimate');document.getElementById('est-athlete').value='${a.id}';updateEstimate()">+ Nuevo Registro</button>
+      </div>
+    </div>
+    ${a.notes?`<div class="card mb16 small">📝 ${esc(a.notes)}</div>`:''}
+    <div class="sec">
+      <div class="sec-title mb12">RM Actual por Ejercicio</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Ejercicio</th><th>RM estimado</th><th>Fecha</th><th>Último test</th><th></th></tr></thead>
+        <tbody>${rmRows}</tbody>
+      </table></div>
+    </div>
+    <div class="sec">
+      <div class="sec-title mb12">Historial reciente</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Fecha</th><th>Ejercicio</th><th>Peso × Reps</th><th>RM estimado</th><th></th></tr></thead>
+        <tbody id="ath-profile-history"></tbody>
+      </table></div>
+    </div>
+  `;
+  const recs = (db.records||[]).filter(r=>r.athleteId===a.id).sort((x,y)=>new Date(y.date)-new Date(x.date));
+  document.getElementById('ath-profile-history').innerHTML = recs.length ? recs.map(r=>{
+    const ex = getExercise(r.exerciseId);
+    return `<tr>
+      <td>${fmtDate(r.date)}</td>
+      <td>${esc(ex?ex.name:'—')}</td>
+      <td>${r.load} kg × ${r.reps}</td>
+      <td>${recEstTotal(r).toFixed(1)} kg ${r.current?'<span class="badge badge-ac" style="margin-left:6px">Actual</span>':''}</td>
+      <td>
+        ${!r.current?`<button class="btn btn-ghost btn-sm" onclick="setCurrentRecord('${r.id}');renderAthleteProfile('${a.id}')">Marcar actual</button>`:''}
+        <button class="btn btn-ghost btn-sm btn-danger" onclick="deleteRecord('${r.id}','${a.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" class="empty">Sin registros todavía</td></tr>`;
+}
+function quickEstimate(athleteId, exerciseId){
+  nav('estimate');
+  document.getElementById('est-athlete').value = athleteId;
+  document.getElementById('est-exercise').value = exerciseId;
+  updateEstimate();
+}
+function deleteRecord(id, athleteId){
+  if(!confirm('¿Eliminar este registro?')) return;
+  db.records = db.records.filter(r=>r.id!==id);
+  saveDB();
+  renderAthleteProfile(athleteId);
+  toast('Registro eliminado');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EXERCISES
+   ═══════════════════════════════════════════════════════════════ */
+function renderExercises(){
+  const tb = document.getElementById('exercises-tbody');
+  tb.innerHTML = (db.exercises||[]).map(ex=>`
+    <tr>
+      <td><b>${esc(ex.name)}</b></td>
+      <td>${ex.bodyweightRelative?'<span class="badge badge-pu">Relativo al peso corporal</span>':'<span class="badge badge-gr">Peso total</span>'}</td>
+      <td>${ex.increment} kg</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openExerciseModal('${ex.id}')">✎ Editar</button></td>
+    </tr>
+  `).join('');
+}
+let editingExerciseId = null;
+function openExerciseModal(id){
+  editingExerciseId = id||null;
+  const ex = id ? getExercise(id) : null;
+  document.getElementById('exercise-modal-title').textContent = id ? 'Editar Ejercicio' : 'Nuevo Ejercicio';
+  document.getElementById('exercise-delete-btn').style.display = (id && ex && !ex.builtin) ? 'inline-flex' : 'none';
+  document.getElementById('ex-name').value = ex?ex.name:'';
+  document.getElementById('ex-bw').value = ex&&ex.bodyweightRelative?'1':'0';
+  document.getElementById('ex-inc').value = ex?ex.increment:2.5;
+  document.getElementById('exercise-modal').style.display = 'flex';
+}
+function saveExercise(){
+  const name = document.getElementById('ex-name').value.trim();
+  if(!name){ toast('El nombre es obligatorio', true); return; }
+  const data = {
+    name,
+    bodyweightRelative: document.getElementById('ex-bw').value==='1',
+    increment: Number(document.getElementById('ex-inc').value)||2.5,
+  };
+  if(editingExerciseId){
+    const idx = db.exercises.findIndex(x=>x.id===editingExerciseId);
+    db.exercises[idx] = Object.assign({}, db.exercises[idx], data);
+  }else{
+    data.id = uid(); data.builtin=false;
+    db.exercises.push(data);
+  }
+  saveDB();
+  document.getElementById('exercise-modal').style.display = 'none';
+  toast('Ejercicio guardado');
+  renderExercises();
+}
+function deleteExerciseFromModal(){
+  if(!editingExerciseId) return;
+  if(!confirm('¿Eliminar este ejercicio? Los registros históricos asociados quedarán sin ejercicio.')) return;
+  db.exercises = db.exercises.filter(e=>e.id!==editingExerciseId);
+  saveDB();
+  document.getElementById('exercise-modal').style.display = 'none';
+  renderExercises();
+  toast('Ejercicio eliminado');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ESTIMATE RM PANEL
+   ═══════════════════════════════════════════════════════════════ */
+function renderEstimatePanel(){
+  const athSel = document.getElementById('est-athlete');
+  const exSel = document.getElementById('est-exercise');
+  const prevAth = athSel.value, prevEx = exSel.value;
+  athSel.innerHTML = (db.athletes||[]).map(a=>`<option value="${a.id}">${esc(athleteName(a))}</option>`).join('') || '<option value="">— sin atletas —</option>';
+  exSel.innerHTML = (db.exercises||[]).map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  if(navData.athleteId) athSel.value = navData.athleteId;
+  else if(prevAth) athSel.value = prevAth;
+  if(prevEx) exSel.value = prevEx;
+  document.getElementById('est-date').value = todayISO();
+  document.getElementById('est-weight').value = '';
+  document.getElementById('est-reps').value = '';
+  document.getElementById('est-note').value = '';
+  updateEstimate();
+}
+function updateEstimate(){
+  const athId = document.getElementById('est-athlete').value;
+  const exId = document.getElementById('est-exercise').value;
+  const ath = getAthlete(athId), ex = getExercise(exId);
+  const weightLabel = document.getElementById('est-weight-label');
+  weightLabel.textContent = ex && ex.bodyweightRelative ? 'Lastre agregado (kg)' : 'Peso levantado (kg)';
+  const w = Number(document.getElementById('est-weight').value);
+  const r = Number(document.getElementById('est-reps').value);
+  const resNum = document.getElementById('est-result-num');
+  const resNote = document.getElementById('est-formula-note');
+  if(!w || !r || r<1){ resNum.textContent = '—'; resNote.textContent=''; return; }
+  const tl = totalLoad(ath, ex, w);
+  const est = estimate1RM(tl, r, db.settings.formula);
+  resNum.textContent = est.toFixed(1)+' kg';
+  let extra = ex && ex.bodyweightRelative ? ` (peso corporal + lastre = ${tl.toFixed(1)} kg)` : '';
+  resNote.textContent = `Fórmula: ${formulaLabel(db.settings.formula)}${extra}${r>10?' · Con más de 10 reps la estimación pierde precisión':''}`;
+}
+function saveEstimate(){
+  const athId = document.getElementById('est-athlete').value;
+  const exId = document.getElementById('est-exercise').value;
+  if(!athId){ toast('Elegí un atleta', true); return; }
+  const w = Number(document.getElementById('est-weight').value);
+  const r = Number(document.getElementById('est-reps').value);
+  if(!w || !r){ toast('Ingresá peso y repeticiones', true); return; }
+  const date = document.getElementById('est-date').value || todayISO();
+  const note = document.getElementById('est-note').value.trim();
+  const setCurrent = document.getElementById('est-set-current').checked;
+  addRecord(athId, exId, date, w, r, note, 'test', setCurrent);
+  toast('Registro guardado');
+  document.getElementById('est-weight').value='';
+  document.getElementById('est-reps').value='';
+  document.getElementById('est-note').value='';
+  updateEstimate();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PLANNING — TEMPLATES + ATHLETE WEEKS
+   ═══════════════════════════════════════════════════════════════ */
+const PHASE_COLORS = {base:'badge-bl', fuerza:'badge-ac', potencia:'badge-pu', mantenimiento:'badge-gr', descarga:'badge-ye', competencia:'badge-re'};
+const PHASE_LABELS = {base:'Base', fuerza:'Fuerza', potencia:'Potencia', mantenimiento:'Mantenimiento', descarga:'Descarga', competencia:'Competencia / Taper'};
+
+function planTab(tab){
+  document.querySelectorAll('#panel-planning .chip').forEach(c=>c.classList.toggle('active', c.dataset.tab===tab));
+  document.getElementById('plan-templates-view').style.display = tab==='templates' ? 'block' : 'none';
+  document.getElementById('plan-athlete-weeks-view').style.display = tab==='athlete-weeks' ? 'block' : 'none';
+  if(tab==='templates') renderTemplatesView();
+  else renderAthleteWeeksView();
+}
+function renderPlanning(){ planTab('templates'); }
+
+function renderTemplatesView(){
+  const el = document.getElementById('plan-templates-view');
+  const tpls = db.templates||[];
+  el.innerHTML = `
+    <div class="sec-hd"><div class="small">Definí el % de 1RM, series y reps una sola vez, y aplicalo a todo el plantel — cada atleta ve su peso sugerido según su propio RM.</div>
+      <button class="btn btn-primary" onclick="openTemplateModal()">+ Nueva Plantilla</button>
+    </div>
+    <div id="tpl-list"></div>
+  `;
+  const list = document.getElementById('tpl-list');
+  list.innerHTML = tpls.length ? tpls.map(t=>`
+    <div class="card mb12">
+      <div class="flex justify-between items-center flex-wrap gap8 mb8">
+        <div class="flex items-center gap10">
+          <div style="font-weight:700;font-size:14px">${esc(t.label)}</div>
+          <span class="badge ${PHASE_COLORS[t.phase]||'badge-gr'}">${PHASE_LABELS[t.phase]||t.phase}</span>
+        </div>
+        <div class="flex gap8">
+          <button class="btn btn-ghost btn-sm" onclick="openTemplateModal('${t.id}')">✎ Editar</button>
+          <button class="btn btn-primary btn-sm" onclick="openApplyModal('${t.id}')">Aplicar a atletas →</button>
+        </div>
+      </div>
+      ${t.notes?`<div class="small mb8">${esc(t.notes)}</div>`:''}
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Ejercicio</th><th>% 1RM</th><th>Series × Reps</th><th>RPE obj.</th><th>Nota</th></tr></thead>
+        <tbody>${(t.items||[]).map(it=>{
+          const ex = getExercise(it.exerciseId);
+          return `<tr><td>${esc(ex?ex.name:'—')}</td><td>${it.pct}%</td><td>${it.series}×${it.repsMin}${it.repsMax&&it.repsMax!==it.repsMin?'-'+it.repsMax:''}</td><td>${it.rpe||'—'}</td><td>${esc(it.note||'')}</td></tr>`;
+        }).join('')}</tbody>
+      </table></div>
+    </div>
+  `).join('') : `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">Sin plantillas todavía</div><div class="empty-sub">Creá una plantilla semanal con los % de 1RM por ejercicio</div></div>`;
+}
+
+let editingTemplateId = null;
+function openTemplateModal(id){
+  editingTemplateId = id||null;
+  const t = id ? db.templates.find(x=>x.id===id) : null;
+  document.getElementById('template-modal-title').textContent = id ? 'Editar Plantilla' : 'Nueva Plantilla Semanal';
+  document.getElementById('template-delete-btn').style.display = id ? 'inline-flex' : 'none';
+  document.getElementById('tpl-label').value = t?t.label:'';
+  document.getElementById('tpl-phase').value = t?t.phase:'base';
+  document.getElementById('tpl-notes').value = t?t.notes||'':'';
+  const itemsWrap = document.getElementById('tpl-items');
+  itemsWrap.innerHTML = '';
+  (t&&t.items&&t.items.length ? t.items : [{}]).forEach(it=>addTplItemRow(it));
+  document.getElementById('template-modal').style.display = 'flex';
+}
+function addTplItemRow(it){
+  it = it||{};
+  const wrap = document.getElementById('tpl-items');
+  const row = document.createElement('div');
+  row.className = 'form-row';
+  row.style.cssText = 'grid-template-columns:1.6fr .8fr .7fr .7fr .7fr 1fr auto;gap:8px;margin-bottom:8px;align-items:end';
+  row.innerHTML = `
+    <div class="form-group"><label class="form-label">Ejercicio</label>
+      <select class="form-input form-select tpl-it-ex">${(db.exercises||[]).map(e=>`<option value="${e.id}" ${it.exerciseId===e.id?'selected':''}>${esc(e.name)}</option>`).join('')}</select>
+    </div>
+    <div class="form-group"><label class="form-label">% 1RM</label><input class="form-input tpl-it-pct" type="number" step="1" value="${it.pct!=null?it.pct:75}"></div>
+    <div class="form-group"><label class="form-label">Series</label><input class="form-input tpl-it-series" type="number" value="${it.series!=null?it.series:4}"></div>
+    <div class="form-group"><label class="form-label">Reps min</label><input class="form-input tpl-it-repsmin" type="number" value="${it.repsMin!=null?it.repsMin:5}"></div>
+    <div class="form-group"><label class="form-label">Reps max</label><input class="form-input tpl-it-repsmax" type="number" value="${it.repsMax!=null?it.repsMax:it.repsMin!=null?it.repsMin:5}"></div>
+    <div class="form-group"><label class="form-label">RPE / Nota</label><input class="form-input tpl-it-note" value="${esc(it.note||'')}" placeholder="RPE 8"></div>
+    <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()" title="Quitar">✕</button>
+  `;
+  wrap.appendChild(row);
+}
+function saveTemplate(){
+  const label = document.getElementById('tpl-label').value.trim();
+  if(!label){ toast('Ponele un nombre a la semana', true); return; }
+  const items = Array.from(document.querySelectorAll('#tpl-items > div')).map(row=>({
+    id: uid(),
+    exerciseId: row.querySelector('.tpl-it-ex').value,
+    pct: Number(row.querySelector('.tpl-it-pct').value)||0,
+    series: Number(row.querySelector('.tpl-it-series').value)||0,
+    repsMin: Number(row.querySelector('.tpl-it-repsmin').value)||0,
+    repsMax: Number(row.querySelector('.tpl-it-repsmax').value)||0,
+    note: row.querySelector('.tpl-it-note').value.trim(),
+  })).filter(it=>it.exerciseId);
+  const data = { label, phase: document.getElementById('tpl-phase').value, notes: document.getElementById('tpl-notes').value.trim(), items };
+  if(editingTemplateId){
+    const idx = db.templates.findIndex(x=>x.id===editingTemplateId);
+    db.templates[idx] = Object.assign({}, db.templates[idx], data);
+  }else{
+    data.id = uid();
+    db.templates.push(data);
+  }
+  saveDB();
+  document.getElementById('template-modal').style.display = 'none';
+  toast('Plantilla guardada');
+  renderTemplatesView();
+}
+function deleteTemplateFromModal(){
+  if(!editingTemplateId) return;
+  if(!confirm('¿Eliminar esta plantilla?')) return;
+  db.templates = db.templates.filter(t=>t.id!==editingTemplateId);
+  saveDB();
+  document.getElementById('template-modal').style.display = 'none';
+  renderTemplatesView();
+  toast('Plantilla eliminada');
+}
+
+let applyingTemplateId = null;
+function openApplyModal(templateId){
+  applyingTemplateId = templateId;
+  document.getElementById('apply-date').value = todayISO();
+  document.getElementById('apply-label').value = '';
+  const list = document.getElementById('apply-athletes-list');
+  list.innerHTML = (db.athletes||[]).length ? (db.athletes||[]).map(a=>`
+    <label class="flex items-center gap8"><input type="checkbox" class="apply-ath-chk" value="${a.id}"> ${esc(athleteName(a))}</label>
+  `).join('') : '<div class="small">No hay atletas cargados todavía.</div>';
+  document.getElementById('apply-modal').style.display = 'flex';
+}
+function confirmApplyTemplate(){
+  const tpl = db.templates.find(t=>t.id===applyingTemplateId);
+  if(!tpl) return;
+  const ids = Array.from(document.querySelectorAll('.apply-ath-chk:checked')).map(c=>c.value);
+  if(!ids.length){ toast('Seleccioná al menos un atleta', true); return; }
+  const date = document.getElementById('apply-date').value || todayISO();
+  const label = document.getElementById('apply-label').value.trim() || tpl.label;
+  ids.forEach(athleteId=>{
+    db.weeks.push({
+      id: uid(), athleteId, label, phase: tpl.phase, notes: tpl.notes, startDate: date, templateId: tpl.id,
+      items: (tpl.items||[]).map(it=>({id:uid(), exerciseId:it.exerciseId, pct:it.pct, series:it.series, repsMin:it.repsMin, repsMax:it.repsMax, note:it.note, actualLoad:null, actualReps:null, actualNote:'', loggedAt:null}))
+    });
+  });
+  saveDB();
+  document.getElementById('apply-modal').style.display = 'none';
+  toast('Semana aplicada a '+ids.length+' atleta(s)');
+  planTab('athlete-weeks');
+}
+
+let selectedWeekAthleteId = null, selectedWeekId = null;
+function renderAthleteWeeksView(){
+  const el = document.getElementById('plan-athlete-weeks-view');
+  el.innerHTML = `
+    <div class="sec-hd">
+      <select class="form-input form-select" style="width:220px" id="aw-athlete-select" onchange="selectAthleteWeek(this.value)"></select>
+      <button class="btn btn-primary" onclick="openNewWeekModal()" ${!(db.athletes||[]).length?'disabled':''}>+ Nueva Semana</button>
+    </div>
+    <div class="flex gap16 flex-wrap" style="align-items:flex-start">
+      <div style="min-width:220px" id="aw-weeks-list"></div>
+      <div style="flex:1;min-width:280px" id="aw-week-detail"></div>
+    </div>
+  `;
+  const sel = document.getElementById('aw-athlete-select');
+  sel.innerHTML = (db.athletes||[]).map(a=>`<option value="${a.id}">${esc(athleteName(a))}</option>`).join('') || '<option value="">— sin atletas —</option>';
+  if(navData.athleteId) selectedWeekAthleteId = navData.athleteId;
+  if(!selectedWeekAthleteId && db.athletes && db.athletes.length) selectedWeekAthleteId = db.athletes[0].id;
+  if(selectedWeekAthleteId) sel.value = selectedWeekAthleteId;
+  selectAthleteWeek(selectedWeekAthleteId);
+}
+function selectAthleteWeek(athleteId){
+  selectedWeekAthleteId = athleteId;
+  const listEl = document.getElementById('aw-weeks-list');
+  if(!listEl) return;
+  const weeks = (db.weeks||[]).filter(w=>w.athleteId===athleteId).sort((a,b)=>new Date(b.startDate)-new Date(a.startDate));
+  listEl.innerHTML = weeks.length ? weeks.map(w=>`
+    <div class="chip" style="display:flex;justify-content:space-between;width:100%;margin-bottom:6px;${selectedWeekId===w.id?'background:var(--aca);border-color:var(--ac);color:var(--ac)':''}" onclick="selectWeek('${w.id}')">
+      <span>${esc(w.label)}</span><span class="small">${fmtDate(w.startDate)}</span>
+    </div>
+  `).join('') : `<div class="small">Sin semanas para este atleta</div>`;
+  if(weeks.length && !weeks.find(w=>w.id===selectedWeekId)) selectedWeekId = weeks[0].id;
+  if(!weeks.length) selectedWeekId = null;
+  renderWeekDetail();
+}
+function selectWeek(id){ selectedWeekId = id; selectAthleteWeek(selectedWeekAthleteId); }
+
+function renderWeekDetail(){
+  const detail = document.getElementById('aw-week-detail');
+  if(!detail) return;
+  const w = (db.weeks||[]).find(x=>x.id===selectedWeekId);
+  if(!w){ detail.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Elegí o creá una semana</div></div>`; return; }
+  const ath = getAthlete(w.athleteId);
+  detail.innerHTML = `
+    <div class="flex justify-between items-center flex-wrap gap8 mb16">
+      <div class="flex items-center gap10">
+        <div style="font-weight:700;font-size:15px">${esc(w.label)}</div>
+        <span class="badge ${PHASE_COLORS[w.phase]||'badge-gr'}">${PHASE_LABELS[w.phase]||w.phase}</span>
+        <span class="small">${fmtDate(w.startDate)}</span>
+      </div>
+      <div class="flex gap8">
+        <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Imprimir</button>
+        <button class="btn btn-ghost btn-sm btn-danger no-print" onclick="deleteWeek('${w.id}')">Eliminar semana</button>
+      </div>
+    </div>
+    ${w.notes?`<div class="small mb16">📝 ${esc(w.notes)}</div>`:''}
+    <div id="aw-items"></div>
+  `;
+  const itemsEl = document.getElementById('aw-items');
+  itemsEl.innerHTML = (w.items||[]).map(it=>{
+    const ex = getExercise(it.exerciseId);
+    const totalRM = getCurrentTotalRM(w.athleteId, it.exerciseId);
+    const suggested = totalRM!=null ? loadFromTotal(ath, ex, totalRM*(it.pct/100), ex?ex.increment:2.5) : null;
+    const unitLabel = ex && ex.bodyweightRelative ? 'kg de lastre' : 'kg';
+    return `<div class="plan-item">
+      <div class="plan-item-hd">
+        <div class="plan-ex-name">${esc(ex?ex.name:'Ejercicio eliminado')}</div>
+        <span class="badge badge-gr">${it.pct}% de 1RM</span>
+      </div>
+      <div class="plan-sub">
+        <span>RM actual: <b>${totalRM!=null?totalRM.toFixed(1)+' kg':'sin datos'}</b></span>
+        <span>Series × Reps: <b>${it.series}×${it.repsMin}${it.repsMax&&it.repsMax!==it.repsMin?'-'+it.repsMax:''}</b></span>
+        ${it.note?`<span>${esc(it.note)}</span>`:''}
+      </div>
+      <div class="plan-suggest">
+        <div class="plan-suggest-kg">${suggested!=null?suggested.toFixed(1)+' '+unitLabel:'— (sin RM cargado)'}</div>
+        <div class="plan-suggest-label">Peso sugerido</div>
+      </div>
+      <div class="plan-actual-row no-print">
+        <div class="form-group"><label class="form-label">Real (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="aw-actual-load-${it.id}" value="${it.actualLoad!=null?it.actualLoad:''}"></div>
+        <div class="form-group"><label class="form-label">Reps logradas</label><input class="form-input" type="number" id="aw-actual-reps-${it.id}" value="${it.actualReps!=null?it.actualReps:''}"></div>
+        <div class="form-group" style="width:180px"><label class="form-label">Nota</label><input class="form-input" id="aw-actual-note-${it.id}" value="${esc(it.actualNote||'')}"></div>
+        <button class="btn btn-primary btn-sm" onclick="logActual('${w.id}','${it.id}')">💾 Guardar</button>
+        ${it.loggedAt?`<span class="small">✓ Registrado ${fmtDate(it.loggedAt)}</span>`:''}
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty">Esta semana no tiene ejercicios.</div>`;
+}
+function logActual(weekId, itemId){
+  const w = db.weeks.find(x=>x.id===weekId);
+  if(!w) return;
+  const it = w.items.find(x=>x.id===itemId);
+  if(!it) return;
+  const load = Number(document.getElementById('aw-actual-load-'+itemId).value);
+  const reps = Number(document.getElementById('aw-actual-reps-'+itemId).value);
+  const note = document.getElementById('aw-actual-note-'+itemId).value.trim();
+  if(!load || !reps){ toast('Ingresá peso real y repeticiones', true); return; }
+  it.actualLoad = load; it.actualReps = reps; it.actualNote = note; it.loggedAt = todayISO();
+  saveDB();
+  const ath = getAthlete(w.athleteId), ex = getExercise(it.exerciseId);
+  const tl = totalLoad(ath, ex, load);
+  const newEst = estimate1RM(tl, reps, db.settings.formula);
+  const currentTotal = getCurrentTotalRM(w.athleteId, it.exerciseId);
+  const setCurrent = currentTotal==null || newEst > currentTotal;
+  addRecord(w.athleteId, it.exerciseId, w.startDate, load, reps, note||'Registrado desde planificación semanal', 'session', setCurrent);
+  toast(setCurrent ? 'Guardado — nuevo RM actual: '+newEst.toFixed(1)+' kg' : 'Guardado');
+  renderWeekDetail();
+}
+function deleteWeek(id){
+  if(!confirm('¿Eliminar esta semana?')) return;
+  db.weeks = db.weeks.filter(w=>w.id!==id);
+  saveDB();
+  selectedWeekId = null;
+  selectAthleteWeek(selectedWeekAthleteId);
+  toast('Semana eliminada');
+}
+
+function openNewWeekModal(){
+  const sel = document.getElementById('nw-template');
+  sel.innerHTML = '<option value="">— Semana en blanco —</option>' + (db.templates||[]).map(t=>`<option value="${t.id}">${esc(t.label)}</option>`).join('');
+  document.getElementById('nw-date').value = todayISO();
+  document.getElementById('nw-label').value = '';
+  document.getElementById('newweek-modal').style.display = 'flex';
+}
+function confirmNewWeek(){
+  if(!selectedWeekAthleteId){ toast('Elegí un atleta primero', true); return; }
+  const tplId = document.getElementById('nw-template').value;
+  const tpl = tplId ? db.templates.find(t=>t.id===tplId) : null;
+  const date = document.getElementById('nw-date').value || todayISO();
+  const label = document.getElementById('nw-label').value.trim() || (tpl?tpl.label:'Nueva semana');
+  const w = {
+    id: uid(), athleteId: selectedWeekAthleteId, label, phase: tpl?tpl.phase:'base', notes: tpl?tpl.notes:'', startDate: date, templateId: tpl?tpl.id:null,
+    items: tpl ? (tpl.items||[]).map(it=>({id:uid(), exerciseId:it.exerciseId, pct:it.pct, series:it.series, repsMin:it.repsMin, repsMax:it.repsMax, note:it.note, actualLoad:null, actualReps:null, actualNote:'', loggedAt:null})) : []
+  };
+  db.weeks.push(w);
+  saveDB();
+  document.getElementById('newweek-modal').style.display = 'none';
+  selectedWeekId = w.id;
+  selectAthleteWeek(selectedWeekAthleteId);
+  toast('Semana creada');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HISTORY
+   ═══════════════════════════════════════════════════════════════ */
+function renderHistory(refreshFilters){
+  const athSel = document.getElementById('hist-athlete');
+  const exSel = document.getElementById('hist-exercise');
+  if(refreshFilters){
+    athSel.innerHTML = '<option value="">Todos los atletas</option>' + (db.athletes||[]).map(a=>`<option value="${a.id}">${esc(athleteName(a))}</option>`).join('');
+    exSel.innerHTML = '<option value="">Todos los ejercicios</option>' + (db.exercises||[]).map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
+  }
+  const athId = athSel.value, exId = exSel.value;
+  let recs = (db.records||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(athId) recs = recs.filter(r=>r.athleteId===athId);
+  if(exId) recs = recs.filter(r=>r.exerciseId===exId);
+
+  const chartCard = document.getElementById('hist-chart-card');
+  if(athId && exId){
+    const points = recs.slice().sort((a,b)=>new Date(a.date)-new Date(b.date)).map(r=>({date:r.date, val:recEstTotal(r)}));
+    if(points.length>=2){ chartCard.style.display='block'; document.getElementById('hist-chart').innerHTML = sparklineSVG(points); }
+    else chartCard.style.display='none';
+  } else chartCard.style.display='none';
+
+  document.getElementById('hist-tbody').innerHTML = recs.length ? recs.map(r=>{
+    const a=getAthlete(r.athleteId), ex=getExercise(r.exerciseId);
+    return `<tr>
+      <td>${fmtDate(r.date)}</td>
+      <td style="cursor:pointer;color:var(--ac)" onclick="viewAthlete('${r.athleteId}')">${esc(athleteName(a))}</td>
+      <td>${esc(ex?ex.name:'—')}</td>
+      <td>${r.load} kg × ${r.reps}</td>
+      <td><b>${recEstTotal(r).toFixed(1)} kg</b> ${r.current?'<span class="badge badge-ac" style="margin-left:6px">Actual</span>':''}</td>
+      <td>${r.source==='session'?'<span class="badge badge-bl">Sesión</span>':'<span class="badge badge-gr">Test</span>'}</td>
+      <td class="small">${esc(r.note||'')}</td>
+      <td><button class="btn btn-ghost btn-sm btn-danger" onclick="deleteRecord('${r.id}','${r.athleteId}');renderHistory()">✕</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="8" class="empty">Sin registros</td></tr>`;
+}
+function sparklineSVG(points){
+  const w=640,h=140,pad=30;
+  const vals = points.map(p=>p.val);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max-min)||1;
+  const stepX = (w-pad*2)/Math.max(1,points.length-1);
+  const coords = points.map((p,i)=>{
+    const x = pad + i*stepX;
+    const y = h-pad - ((p.val-min)/range)*(h-pad*2);
+    return [x,y];
+  });
+  const path = coords.map((c,i)=>(i===0?'M':'L')+c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
+  const dots = coords.map((c,i)=>`<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="3.5" fill="#22C55E"><title>${points[i].date}: ${points[i].val.toFixed(1)} kg</title></circle>`).join('');
+  const labels = points.map((p,i)=> i===0||i===points.length-1 ? `<text x="${coords[i][0].toFixed(1)}" y="${h-8}" font-size="9" fill="#5C6779" text-anchor="${i===0?'start':'end'}">${fmtDate(p.date)}</text>` : '').join('');
+  return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" width="100%" height="140" preserveAspectRatio="none">
+    <text x="${pad}" y="16" font-size="10" fill="#98A4B8">Máx: ${max.toFixed(1)} kg</text>
+    <text x="${w-pad}" y="16" font-size="10" fill="#98A4B8" text-anchor="end">Mín: ${min.toFixed(1)} kg</text>
+    <path d="${path}" fill="none" stroke="#22C55E" stroke-width="2"/>
+    ${dots}${labels}
+  </svg>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS
+   ═══════════════════════════════════════════════════════════════ */
+function renderSettings(){
+  document.getElementById('set-coach-name').value = db.settings.coachName||'';
+  document.getElementById('set-org').value = db.settings.org||'';
+  document.getElementById('set-formula').value = db.settings.formula||'epley';
+}
+function saveSettings(){
+  db.settings.coachName = document.getElementById('set-coach-name').value.trim();
+  db.settings.org = document.getElementById('set-org').value.trim();
+  db.settings.formula = document.getElementById('set-formula').value;
+  saveDB();
+  updateCoachBadge();
+  toast('Ajustes guardados');
+}
+function updateCoachBadge(){
+  const b = document.getElementById('coach-badge');
+  b.textContent = '👋 ' + (db.settings.coachName ? db.settings.coachName : 'Coach') + (db.settings.org?' · '+db.settings.org:'');
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(db,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'control-de-cargas-backup-'+todayISO()+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+  toast('Backup descargado');
+}
+function importData(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed || typeof parsed!=='object') throw new Error('Formato inválido');
+      if(!confirm('Esto reemplaza todos los datos actuales por los del backup. ¿Continuar?')) return;
+      db = parsed;
+      if(!db.exercises||!db.exercises.length) db.exercises = DEFAULT_EXERCISES.map(x=>Object.assign({},x));
+      if(!db.settings) db.settings = {coachName:'',org:'',formula:'epley'};
+      if(!db.templates) db.templates=[]; if(!db.weeks) db.weeks=[]; if(!db.records) db.records=[]; if(!db.athletes) db.athletes=[];
+      saveDB();
+      toast('Backup importado');
+      nav('dashboard');
+      updateCoachBadge();
+    }catch(err){
+      toast('No se pudo leer el archivo', true);
+    }
+  };
+  reader.readAsText(file);
+}
+function resetData(){
+  if(!confirm('Esto borra TODOS los atletas, registros y planificaciones de este navegador. ¿Estás seguro?')) return;
+  if(!confirm('Última confirmación: esta acción es irreversible. ¿Borrar todo?')) return;
+  db = defaultDB();
+  saveDB();
+  toast('Datos borrados');
+  nav('dashboard');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════════ */
+function init(){
+  loadDB();
+  document.getElementById('app').style.display = 'flex';
+  updateCoachBadge();
+  nav('dashboard');
+}
+init();
+</script>
+</body>
+</html>
