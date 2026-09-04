@@ -71,11 +71,13 @@ a{color:var(--ac);text-decoration:none}
 .sidebar.collapsed .sb-item span:last-child{display:none}
 .sb-toggle{padding:10px;border-top:1px solid var(--bdr);cursor:pointer;color:var(--g3);text-align:center;font-size:13px;flex-shrink:0}
 .sb-toggle:hover{color:var(--ac)}
+.sidebar-backdrop{display:none}
 
 .topbar-title{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:.2px}
 .topbar-sub{font-size:11px;color:var(--g3)}
 .topbar-spacer{flex:1}
 .coach-badge{font-size:11px;color:var(--g3);display:flex;align-items:center;gap:6px}
+.mobile-hamburger{display:none;background:transparent;border:1px solid var(--bdr);border-radius:var(--r8);color:var(--w);width:34px;height:34px;align-items:center;justify-content:center;cursor:pointer;font-size:16px;flex-shrink:0}
 
 /* ══ BUTTONS ═════════════════════════════════════════════════ */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--r8);border:1px solid var(--bdr);background:var(--dk3);color:var(--w);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s}
@@ -190,7 +192,15 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 .tag-phase{padding:2px 8px;border-radius:5px;font-size:9.5px;font-weight:700;text-transform:uppercase}
 
 @media(max-width:900px){
-  .sidebar{position:absolute;z-index:50;height:100%}
+  .sidebar{position:fixed;z-index:60;top:0;left:0;height:100%;width:250px;min-width:250px;transform:translateX(-100%);transition:transform .25s}
+  .sidebar.mobile-open{transform:translateX(0)}
+  .sidebar.collapsed{width:250px;min-width:250px}
+  .sidebar.collapsed .sb-logo-text{display:block}
+  .sidebar.collapsed .sb-sec-label{display:block}
+  .sidebar.collapsed .sb-item span:last-child{display:inline}
+  .sb-toggle{display:none}
+  .mobile-hamburger{display:inline-flex}
+  .sidebar-backdrop.show{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:55}
   .form-row.c2,.form-row.c3,.form-row.c4{grid-template-columns:1fr 1fr}
   .content{padding:16px 14px 40px}
 }
@@ -212,6 +222,7 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 <body>
 
 <div class="app" id="app" style="display:none">
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebarMobile()"></div>
   <!-- ══ SIDEBAR ══ -->
   <div class="sidebar" id="sidebar">
     <div class="sb-logo">
@@ -240,6 +251,7 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
   <!-- ══ MAIN ══ -->
   <div class="main">
     <div class="topbar">
+      <button class="mobile-hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
       <div>
         <div class="topbar-title" id="topbar-title">Dashboard</div>
         <div class="topbar-sub" id="topbar-sub">Resumen general</div>
@@ -759,9 +771,22 @@ function nav(panel, data){
   else if(panel==='history') renderHistory(true);
   else if(panel==='exercises') renderExercises();
   else if(panel==='settings') renderSettings();
+  if(window.innerWidth<=900) closeSidebarMobile();
 }
 
-function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); }
+function toggleSidebar(){
+  if(window.innerWidth<=900){
+    const sb = document.getElementById('sidebar');
+    const isOpen = sb.classList.toggle('mobile-open');
+    document.getElementById('sidebar-backdrop').classList.toggle('show', isOpen);
+  }else{
+    document.getElementById('sidebar').classList.toggle('collapsed');
+  }
+}
+function closeSidebarMobile(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-backdrop').classList.remove('show');
+}
 
 function toast(msg, isErr){
   const c = document.getElementById('toast-container');
