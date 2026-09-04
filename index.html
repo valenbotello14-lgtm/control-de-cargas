@@ -304,7 +304,7 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
             <div class="rm-formula-note" id="est-formula-note"></div>
           </div>
           <div class="flex justify-between items-center" style="margin-top:16px">
-            <label class="small flex items-center gap8"><input type="checkbox" id="est-set-current" checked> Usar como RM actual del atleta</label>
+            <label class="small flex items-center gap8"><input type="checkbox" id="est-set-current" checked> Usar como RM de referencia del atleta</label>
             <button class="btn btn-primary" onclick="saveEstimate()">💾 Guardar registro</button>
           </div>
         </div>
@@ -314,8 +314,8 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
       <div class="panel" id="panel-planning">
         <div class="sec-hd">
           <div class="toolbar">
-            <div class="chip active" data-tab="templates" onclick="planTab('templates')">Plantillas semanales</div>
-            <div class="chip" data-tab="athlete-weeks" onclick="planTab('athlete-weeks')">Semanas por atleta</div>
+            <div class="chip active" data-tab="templates" onclick="planTab('templates')">Presets de sesión</div>
+            <div class="chip" data-tab="athlete-weeks" onclick="planTab('athlete-weeks')">Sesiones del atleta</div>
           </div>
         </div>
         <div id="plan-templates-view"></div>
@@ -447,12 +447,13 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 </div>
 </div>
 
-<!-- ══ WEEK TEMPLATE MODAL ══ -->
+<!-- ══ SESSION PRESET MODAL ══ -->
 <div class="modal-overlay" id="template-modal" style="display:none" onclick="closeModal(event,'template-modal')">
 <div class="modal wide" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title" id="template-modal-title">Nueva Plantilla Semanal</div><div class="modal-close" onclick="closeModal(null,'template-modal')">✕</div></div>
+  <div class="modal-hd"><div class="modal-title" id="template-modal-title">Nuevo Preset de Sesión</div><div class="modal-close" onclick="closeModal(null,'template-modal')">✕</div></div>
+  <div class="form-hint mb12">Un preset es un esquema de %1RM/series/reps que después cargás en la sesión de un atleta puntual — no se aplica a nadie automáticamente.</div>
   <div class="form-row c2 mb12">
-    <div class="form-group"><label class="form-label">Nombre de la semana *</label><input class="form-input" id="tpl-label" placeholder="Semana 1 — Base"></div>
+    <div class="form-group"><label class="form-label">Nombre del preset *</label><input class="form-input" id="tpl-label" placeholder="Fuerza máxima — tren inferior"></div>
     <div class="form-group"><label class="form-label">Fase</label>
       <select class="form-input form-select" id="tpl-phase">
         <option value="base">Base</option>
@@ -464,50 +465,31 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
       </select>
     </div>
   </div>
-  <div class="form-group mb16"><label class="form-label">Notas</label><input class="form-input" id="tpl-notes" placeholder="Objetivo de la semana…"></div>
+  <div class="form-group mb16"><label class="form-label">Notas</label><input class="form-input" id="tpl-notes" placeholder="Objetivo de la sesión…"></div>
   <div class="flex justify-between items-center mb12">
-    <div class="sec-title" style="font-size:13px">Ejercicios de la semana</div>
+    <div class="sec-title" style="font-size:13px">Ejercicios del preset</div>
     <button class="btn btn-ghost btn-sm" onclick="addTplItemRow()">+ Agregar ejercicio</button>
   </div>
   <div id="tpl-items"></div>
   <div class="modal-ft">
     <button class="btn" id="template-delete-btn" style="display:none" onclick="deleteTemplateFromModal()">Eliminar</button>
     <button class="btn btn-ghost" onclick="closeModal(null,'template-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveTemplate()">Guardar Plantilla</button>
+    <button class="btn btn-primary" onclick="saveTemplate()">Guardar Preset</button>
   </div>
 </div>
 </div>
 
-<!-- ══ APPLY TEMPLATE MODAL ══ -->
-<div class="modal-overlay" id="apply-modal" style="display:none" onclick="closeModal(event,'apply-modal')">
-<div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title">Aplicar plantilla a atletas</div><div class="modal-close" onclick="closeModal(null,'apply-modal')">✕</div></div>
-  <div class="form-row c2 mb12">
-    <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="apply-date"></div>
-    <div class="form-group"><label class="form-label">Etiqueta (opcional)</label><input class="form-input" id="apply-label" placeholder="Igual a la plantilla si se deja vacío"></div>
-  </div>
-  <div class="form-group mb12">
-    <label class="form-label">Atletas</label>
-    <div id="apply-athletes-list" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;border:1px solid var(--bdr);border-radius:8px;padding:10px"></div>
-  </div>
-  <div class="modal-ft">
-    <button class="btn btn-ghost" onclick="closeModal(null,'apply-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="confirmApplyTemplate()">Aplicar</button>
-  </div>
-</div>
-</div>
-
-<!-- ══ NEW ATHLETE WEEK MODAL ══ -->
+<!-- ══ NEW SESSION MODAL ══ -->
 <div class="modal-overlay" id="newweek-modal" style="display:none" onclick="closeModal(event,'newweek-modal')">
 <div class="modal" onclick="event.stopPropagation()">
-  <div class="modal-hd"><div class="modal-title">Nueva Semana</div><div class="modal-close" onclick="closeModal(null,'newweek-modal')">✕</div></div>
+  <div class="modal-hd"><div class="modal-title">Nueva Sesión</div><div class="modal-close" onclick="closeModal(null,'newweek-modal')">✕</div></div>
   <div class="form-group mb12">
-    <label class="form-label">Basar en plantilla (opcional)</label>
-    <select class="form-input form-select" id="nw-template"><option value="">— Semana en blanco —</option></select>
+    <label class="form-label">Basar en preset (opcional)</label>
+    <select class="form-input form-select" id="nw-template"><option value="">— Sesión en blanco —</option></select>
   </div>
   <div class="form-row c2 mb12">
-    <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date" id="nw-date"></div>
-    <div class="form-group"><label class="form-label">Etiqueta</label><input class="form-input" id="nw-label" placeholder="Semana 1"></div>
+    <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" type="date" id="nw-date"></div>
+    <div class="form-group"><label class="form-label">Etiqueta</label><input class="form-input" id="nw-label" placeholder="Fuerza máxima — sin fatiga"></div>
   </div>
   <div class="modal-ft">
     <button class="btn btn-ghost" onclick="closeModal(null,'newweek-modal')">Cancelar</button>
@@ -660,7 +642,7 @@ const PANEL_META = {
   athletes:['Atletas','Gestión de atletas'],
   'athlete-profile':['Perfil del Atleta',''],
   estimate:['Estimar RM','Calculadora rápida de 1RM'],
-  planning:['Planificación','Plantillas y cargas semanales'],
+  planning:['Planificación','Sesiones individuales, chequeo del día y % de RM'],
   history:['Historial','Registros de RM y progresión'],
   exercises:['Ejercicios','Catálogo de movimientos'],
   settings:['Ajustes','Configuración de la app'],
@@ -713,7 +695,7 @@ function renderDashboard(){
     <div class="stat-card"><div class="stat-num">${aths.length}</div><div class="stat-label">Atletas</div></div>
     <div class="stat-card"><div class="stat-num">${(db.exercises||[]).length}</div><div class="stat-label">Ejercicios</div></div>
     <div class="stat-card"><div class="stat-num">${recs.length}</div><div class="stat-label">Registros de RM</div></div>
-    <div class="stat-card"><div class="stat-num">${(db.weeks||[]).length}</div><div class="stat-label">Semanas planificadas</div></div>
+    <div class="stat-card"><div class="stat-num">${(db.weeks||[]).length}</div><div class="stat-label">Sesiones registradas</div></div>
   `;
   const preview = aths.slice(0,6);
   document.getElementById('dash-athletes').innerHTML = preview.length
@@ -730,7 +712,7 @@ function renderDashboard(){
       <td>${esc(ex?ex.name:'—')}</td>
       <td>${r.load} kg × ${r.reps}</td>
       <td><b>${est?est.toFixed(1):'—'} kg</b></td>
-      <td>${r.current?'<span class="badge badge-ac">RM actual</span>':''}</td>
+      <td>${r.current?'<span class="badge badge-ac">Referencia</span>':''}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="6" class="empty">Todavía no hay registros de RM.</td></tr>`;
 }
@@ -858,34 +840,63 @@ function renderAthleteProfile(id){
     </div>
     ${a.notes?`<div class="card mb16 small">📝 ${esc(a.notes)}</div>`:''}
     <div class="sec">
-      <div class="sec-title mb12">RM Actual por Ejercicio</div>
+      <div class="sec-title mb12">RM de Referencia por Ejercicio</div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Ejercicio</th><th>RM estimado</th><th>Fecha</th><th>Último test</th><th></th></tr></thead>
         <tbody>${rmRows}</tbody>
       </table></div>
     </div>
     <div class="sec">
-      <div class="sec-title mb12">Historial reciente</div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Fecha</th><th>Ejercicio</th><th>Peso × Reps</th><th>RM estimado</th><th></th></tr></thead>
-        <tbody id="ath-profile-history"></tbody>
-      </table></div>
+      <div class="flex justify-between items-center mb12">
+        <div class="sec-title">Progresión por Ejercicio — Peso × Reps semana a semana</div>
+      </div>
+      <div class="small mb16">Cada ejercicio registra su propia historia de cargas para seguir la sobrecarga progresiva: cuánto peso y cuántas repeticiones fue haciendo ${esc(a.firstName)} sesión tras sesión.</div>
+      <div id="ath-profile-exercises"></div>
     </div>
   `;
-  const recs = (db.records||[]).filter(r=>r.athleteId===a.id).sort((x,y)=>new Date(y.date)-new Date(x.date));
-  document.getElementById('ath-profile-history').innerHTML = recs.length ? recs.map(r=>{
-    const ex = getExercise(r.exerciseId);
-    return `<tr>
-      <td>${fmtDate(r.date)}</td>
-      <td>${esc(ex?ex.name:'—')}</td>
-      <td>${r.load} kg × ${r.reps}</td>
-      <td>${recEstTotal(r).toFixed(1)} kg ${r.current?'<span class="badge badge-ac" style="margin-left:6px">Actual</span>':''}</td>
-      <td>
-        ${!r.current?`<button class="btn btn-ghost btn-sm" onclick="setCurrentRecord('${r.id}');renderAthleteProfile('${a.id}')">Marcar actual</button>`:''}
-        <button class="btn btn-ghost btn-sm btn-danger" onclick="deleteRecord('${r.id}','${a.id}')">✕</button>
-      </td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="5" class="empty">Sin registros todavía</td></tr>`;
+  const exercisesEl = document.getElementById('ath-profile-exercises');
+  exercisesEl.innerHTML = exs.map(ex=>{
+    const recs = (db.records||[]).filter(r=>r.athleteId===a.id && r.exerciseId===ex.id).sort((x,y)=>new Date(x.date)-new Date(y.date));
+    let prevEst = null;
+    const rows = recs.map(r=>{
+      const est = recEstTotal(r);
+      let deltaHTML = '<span class="small">—</span>';
+      if(prevEst!=null){
+        const d = est-prevEst;
+        if(Math.abs(d)>=0.05) deltaHTML = d>0 ? `<span style="color:var(--ac)">▲ +${d.toFixed(1)} kg</span>` : `<span style="color:var(--ye)">▼ ${d.toFixed(1)} kg</span>`;
+        else deltaHTML = '<span class="small">= igual</span>';
+      }
+      prevEst = est;
+      return `<tr>
+        <td>${fmtDate(r.date)}</td>
+        <td><b>${r.load} kg</b> × ${r.reps}</td>
+        <td>${est.toFixed(1)} kg</td>
+        <td>${deltaHTML}</td>
+        <td>${sourceBadge(r.source)}</td>
+        <td>${r.current?'<span class="badge badge-ac">Referencia</span>':''}</td>
+        <td class="small">${esc(r.note||'')}</td>
+        <td>
+          ${!r.current?`<button class="btn btn-ghost btn-sm" onclick="setCurrentRecord('${r.id}');renderAthleteProfile('${a.id}')">Marcar referencia</button>`:''}
+          <button class="btn btn-ghost btn-sm btn-danger" onclick="deleteRecord('${r.id}','${a.id}')">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return `<div class="card mb12">
+      <div class="flex justify-between items-center mb10">
+        <div style="font-weight:700;font-size:13.5px">${esc(ex.name)}</div>
+        <button class="btn btn-ghost btn-sm" onclick="quickEstimate('${a.id}','${ex.id}')">+ Registrar peso × reps</button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Fecha</th><th>Peso × Reps</th><th>RM estimado</th><th>Variación</th><th>Origen</th><th></th><th>Nota</th><th></th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="8" class="empty">Sin registros todavía para este ejercicio</td></tr>`}</tbody>
+      </table></div>
+    </div>`;
+  }).join('');
+}
+function sourceBadge(source){
+  if(source==='session') return '<span class="badge badge-bl">Sesión</span>';
+  if(source==='daily-check') return '<span class="badge badge-ye">Chequeo del día</span>';
+  return '<span class="badge badge-gr">Test</span>';
 }
 function quickEstimate(athleteId, exerciseId){
   nav('estimate');
@@ -1028,8 +1039,8 @@ function renderTemplatesView(){
   const el = document.getElementById('plan-templates-view');
   const tpls = db.templates||[];
   el.innerHTML = `
-    <div class="sec-hd"><div class="small">Definí el % de 1RM, series y reps una sola vez, y aplicalo a todo el plantel — cada atleta ve su peso sugerido según su propio RM.</div>
-      <button class="btn btn-primary" onclick="openTemplateModal()">+ Nueva Plantilla</button>
+    <div class="sec-hd"><div class="small">Un preset es un esquema reutilizable de %1RM/series/reps (ej. "Fuerza máxima — baja fatiga"). Lo cargás al crear la sesión de un atleta puntual — es solo un punto de partida, después lo ajustás caso por caso.</div>
+      <button class="btn btn-primary" onclick="openTemplateModal()">+ Nuevo Preset</button>
     </div>
     <div id="tpl-list"></div>
   `;
@@ -1041,10 +1052,7 @@ function renderTemplatesView(){
           <div style="font-weight:700;font-size:14px">${esc(t.label)}</div>
           <span class="badge ${PHASE_COLORS[t.phase]||'badge-gr'}">${PHASE_LABELS[t.phase]||t.phase}</span>
         </div>
-        <div class="flex gap8">
-          <button class="btn btn-ghost btn-sm" onclick="openTemplateModal('${t.id}')">✎ Editar</button>
-          <button class="btn btn-primary btn-sm" onclick="openApplyModal('${t.id}')">Aplicar a atletas →</button>
-        </div>
+        <button class="btn btn-ghost btn-sm" onclick="openTemplateModal('${t.id}')">✎ Editar</button>
       </div>
       ${t.notes?`<div class="small mb8">${esc(t.notes)}</div>`:''}
       <div class="tbl-wrap"><table>
@@ -1054,15 +1062,16 @@ function renderTemplatesView(){
           return `<tr><td>${esc(ex?ex.name:'—')}</td><td>${it.pct}%</td><td>${it.series}×${it.repsMin}${it.repsMax&&it.repsMax!==it.repsMin?'-'+it.repsMax:''}</td><td>${it.rpe||'—'}</td><td>${esc(it.note||'')}</td></tr>`;
         }).join('')}</tbody>
       </table></div>
+      <div class="small" style="margin-top:8px">Se usa desde "Sesiones del atleta → + Nueva Sesión".</div>
     </div>
-  `).join('') : `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">Sin plantillas todavía</div><div class="empty-sub">Creá una plantilla semanal con los % de 1RM por ejercicio</div></div>`;
+  `).join('') : `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">Sin presets todavía</div><div class="empty-sub">Creá un esquema de %1RM por ejercicio para reutilizar en sesiones individuales</div></div>`;
 }
 
 let editingTemplateId = null;
 function openTemplateModal(id){
   editingTemplateId = id||null;
   const t = id ? db.templates.find(x=>x.id===id) : null;
-  document.getElementById('template-modal-title').textContent = id ? 'Editar Plantilla' : 'Nueva Plantilla Semanal';
+  document.getElementById('template-modal-title').textContent = id ? 'Editar Preset' : 'Nuevo Preset de Sesión';
   document.getElementById('template-delete-btn').style.display = id ? 'inline-flex' : 'none';
   document.getElementById('tpl-label').value = t?t.label:'';
   document.getElementById('tpl-phase').value = t?t.phase:'base';
@@ -1093,7 +1102,7 @@ function addTplItemRow(it){
 }
 function saveTemplate(){
   const label = document.getElementById('tpl-label').value.trim();
-  if(!label){ toast('Ponele un nombre a la semana', true); return; }
+  if(!label){ toast('Ponele un nombre al preset', true); return; }
   const items = Array.from(document.querySelectorAll('#tpl-items > div')).map(row=>({
     id: uid(),
     exerciseId: row.querySelector('.tpl-it-ex').value,
@@ -1113,47 +1122,17 @@ function saveTemplate(){
   }
   saveDB();
   document.getElementById('template-modal').style.display = 'none';
-  toast('Plantilla guardada');
+  toast('Preset guardado');
   renderTemplatesView();
 }
 function deleteTemplateFromModal(){
   if(!editingTemplateId) return;
-  if(!confirm('¿Eliminar esta plantilla?')) return;
+  if(!confirm('¿Eliminar este preset?')) return;
   db.templates = db.templates.filter(t=>t.id!==editingTemplateId);
   saveDB();
   document.getElementById('template-modal').style.display = 'none';
   renderTemplatesView();
-  toast('Plantilla eliminada');
-}
-
-let applyingTemplateId = null;
-function openApplyModal(templateId){
-  applyingTemplateId = templateId;
-  document.getElementById('apply-date').value = todayISO();
-  document.getElementById('apply-label').value = '';
-  const list = document.getElementById('apply-athletes-list');
-  list.innerHTML = (db.athletes||[]).length ? (db.athletes||[]).map(a=>`
-    <label class="flex items-center gap8"><input type="checkbox" class="apply-ath-chk" value="${a.id}"> ${esc(athleteName(a))}</label>
-  `).join('') : '<div class="small">No hay atletas cargados todavía.</div>';
-  document.getElementById('apply-modal').style.display = 'flex';
-}
-function confirmApplyTemplate(){
-  const tpl = db.templates.find(t=>t.id===applyingTemplateId);
-  if(!tpl) return;
-  const ids = Array.from(document.querySelectorAll('.apply-ath-chk:checked')).map(c=>c.value);
-  if(!ids.length){ toast('Seleccioná al menos un atleta', true); return; }
-  const date = document.getElementById('apply-date').value || todayISO();
-  const label = document.getElementById('apply-label').value.trim() || tpl.label;
-  ids.forEach(athleteId=>{
-    db.weeks.push({
-      id: uid(), athleteId, label, phase: tpl.phase, notes: tpl.notes, startDate: date, templateId: tpl.id,
-      items: (tpl.items||[]).map(it=>({id:uid(), exerciseId:it.exerciseId, pct:it.pct, series:it.series, repsMin:it.repsMin, repsMax:it.repsMax, note:it.note, actualLoad:null, actualReps:null, actualNote:'', loggedAt:null}))
-    });
-  });
-  saveDB();
-  document.getElementById('apply-modal').style.display = 'none';
-  toast('Semana aplicada a '+ids.length+' atleta(s)');
-  planTab('athlete-weeks');
+  toast('Preset eliminado');
 }
 
 let selectedWeekAthleteId = null, selectedWeekId = null;
@@ -1162,7 +1141,7 @@ function renderAthleteWeeksView(){
   el.innerHTML = `
     <div class="sec-hd">
       <select class="form-input form-select" style="width:220px" id="aw-athlete-select" onchange="selectAthleteWeek(this.value)"></select>
-      <button class="btn btn-primary" onclick="openNewWeekModal()" ${!(db.athletes||[]).length?'disabled':''}>+ Nueva Semana</button>
+      <button class="btn btn-primary" onclick="openNewWeekModal()" ${!(db.athletes||[]).length?'disabled':''}>+ Nueva Sesión</button>
     </div>
     <div class="flex gap16 flex-wrap" style="align-items:flex-start">
       <div style="min-width:220px" id="aw-weeks-list"></div>
@@ -1185,7 +1164,7 @@ function selectAthleteWeek(athleteId){
     <div class="chip" style="display:flex;justify-content:space-between;width:100%;margin-bottom:6px;${selectedWeekId===w.id?'background:var(--aca);border-color:var(--ac);color:var(--ac)':''}" onclick="selectWeek('${w.id}')">
       <span>${esc(w.label)}</span><span class="small">${fmtDate(w.startDate)}</span>
     </div>
-  `).join('') : `<div class="small">Sin semanas para este atleta</div>`;
+  `).join('') : `<div class="small">Sin sesiones para este atleta todavía</div>`;
   if(weeks.length && !weeks.find(w=>w.id===selectedWeekId)) selectedWeekId = weeks[0].id;
   if(!weeks.length) selectedWeekId = null;
   renderWeekDetail();
@@ -1196,8 +1175,7 @@ function renderWeekDetail(){
   const detail = document.getElementById('aw-week-detail');
   if(!detail) return;
   const w = (db.weeks||[]).find(x=>x.id===selectedWeekId);
-  if(!w){ detail.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Elegí o creá una semana</div></div>`; return; }
-  const ath = getAthlete(w.athleteId);
+  if(!w){ detail.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Elegí o creá una sesión</div></div>`; return; }
   detail.innerHTML = `
     <div class="flex justify-between items-center flex-wrap gap8 mb16">
       <div class="flex items-center gap10">
@@ -1207,7 +1185,7 @@ function renderWeekDetail(){
       </div>
       <div class="flex gap8">
         <button class="btn btn-ghost btn-sm no-print" onclick="window.print()">🖨 Imprimir</button>
-        <button class="btn btn-ghost btn-sm btn-danger no-print" onclick="deleteWeek('${w.id}')">Eliminar semana</button>
+        <button class="btn btn-ghost btn-sm btn-danger no-print" onclick="deleteWeek('${w.id}')">Eliminar sesión</button>
       </div>
     </div>
     ${w.notes?`<div class="small mb16">📝 ${esc(w.notes)}</div>`:''}
@@ -1216,8 +1194,6 @@ function renderWeekDetail(){
   const itemsEl = document.getElementById('aw-items');
   itemsEl.innerHTML = (w.items||[]).map(it=>{
     const ex = getExercise(it.exerciseId);
-    const totalRM = getCurrentTotalRM(w.athleteId, it.exerciseId);
-    const suggested = totalRM!=null ? loadFromTotal(ath, ex, totalRM*(it.pct/100), ex?ex.increment:2.5) : null;
     const unitLabel = ex && ex.bodyweightRelative ? 'kg de lastre' : 'kg';
     return `<div class="plan-item">
       <div class="plan-item-hd">
@@ -1225,23 +1201,96 @@ function renderWeekDetail(){
         <span class="badge badge-gr">${it.pct}% de 1RM</span>
       </div>
       <div class="plan-sub">
-        <span>RM actual: <b>${totalRM!=null?totalRM.toFixed(1)+' kg':'sin datos'}</b></span>
         <span>Series × Reps: <b>${it.series}×${it.repsMin}${it.repsMax&&it.repsMax!==it.repsMin?'-'+it.repsMax:''}</b></span>
         ${it.note?`<span>${esc(it.note)}</span>`:''}
       </div>
-      <div class="plan-suggest">
-        <div class="plan-suggest-kg">${suggested!=null?suggested.toFixed(1)+' '+unitLabel:'— (sin RM cargado)'}</div>
-        <div class="plan-suggest-label">Peso sugerido</div>
+      <div class="card no-print" style="background:var(--dk3);border-color:var(--bdr2);padding:12px 14px;margin-bottom:10px">
+        <div class="small mb8" style="color:var(--g2)">🎯 Chequeo del día — el RM cambia de un día a otro. Una serie de aproximación antes de ir a la carga de trabajo ajusta el % a como está el atleta HOY, no a un test de hace semanas.</div>
+        <div class="flex items-end gap8 flex-wrap">
+          <div class="form-group" style="width:130px"><label class="form-label">Peso (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="aw-check-load-${it.id}" value="${it.checkLoad!=null?it.checkLoad:''}" oninput="onCheckInput('${w.id}','${it.id}')"></div>
+          <div class="form-group" style="width:90px"><label class="form-label">Reps</label><input class="form-input" type="number" id="aw-check-reps-${it.id}" value="${it.checkReps!=null?it.checkReps:''}" oninput="onCheckInput('${w.id}','${it.id}')"></div>
+          <button class="btn btn-ghost btn-sm" onclick="saveDailyCheck('${w.id}','${it.id}')">💾 Guardar chequeo</button>
+        </div>
+        <div id="aw-check-preview-${it.id}" class="small" style="margin-top:8px"></div>
       </div>
+      <div class="plan-suggest" id="aw-suggest-${it.id}"></div>
       <div class="plan-actual-row no-print">
         <div class="form-group"><label class="form-label">Real (${unitLabel})</label><input class="form-input" type="number" step="0.5" id="aw-actual-load-${it.id}" value="${it.actualLoad!=null?it.actualLoad:''}"></div>
         <div class="form-group"><label class="form-label">Reps logradas</label><input class="form-input" type="number" id="aw-actual-reps-${it.id}" value="${it.actualReps!=null?it.actualReps:''}"></div>
-        <div class="form-group" style="width:180px"><label class="form-label">Nota</label><input class="form-input" id="aw-actual-note-${it.id}" value="${esc(it.actualNote||'')}"></div>
+        <div class="form-group" style="width:80px"><label class="form-label">RPE</label><input class="form-input" type="number" min="1" max="10" id="aw-actual-rpe-${it.id}" value="${it.actualRpe!=null?it.actualRpe:''}"></div>
+        <div class="form-group" style="width:160px"><label class="form-label">Nota</label><input class="form-input" id="aw-actual-note-${it.id}" value="${esc(it.actualNote||'')}"></div>
         <button class="btn btn-primary btn-sm" onclick="logActual('${w.id}','${it.id}')">💾 Guardar</button>
         ${it.loggedAt?`<span class="small">✓ Registrado ${fmtDate(it.loggedAt)}</span>`:''}
       </div>
     </div>`;
-  }).join('') || `<div class="empty">Esta semana no tiene ejercicios.</div>`;
+  }).join('') || `<div class="empty">Esta sesión no tiene ejercicios.</div>`;
+  (w.items||[]).forEach(it=>updateItemSuggestion(w, it));
+}
+// Recomputes and injects the suggested weight + daily-check preview for one exercise block,
+// without re-rendering the whole session (keeps focus in the check inputs while typing).
+function updateItemSuggestion(w, it){
+  const ath = getAthlete(w.athleteId), ex = getExercise(it.exerciseId);
+  const unitLabel = ex && ex.bodyweightRelative ? 'kg de lastre' : 'kg';
+  const refRM = getCurrentTotalRM(w.athleteId, it.exerciseId);
+  let checkRM = null;
+  if(it.checkLoad && it.checkReps) checkRM = estimate1RM(totalLoad(ath, ex, it.checkLoad), it.checkReps, db.settings.formula);
+  const effectiveRM = checkRM!=null ? checkRM : refRM;
+
+  const suggestEl = document.getElementById('aw-suggest-'+it.id);
+  if(suggestEl){
+    const suggested = effectiveRM!=null ? loadFromTotal(ath, ex, effectiveRM*(it.pct/100), ex?ex.increment:2.5) : null;
+    suggestEl.innerHTML = `
+      <div class="plan-suggest-kg">${suggested!=null?suggested.toFixed(1)+' '+unitLabel:'— (sin RM cargado)'}</div>
+      <div class="plan-suggest-label">Peso sugerido · ${it.pct}% ${checkRM!=null?'del RM de hoy':'del RM de referencia'}</div>
+    `;
+  }
+  const prevEl = document.getElementById('aw-check-preview-'+it.id);
+  if(prevEl){
+    if(checkRM!=null){
+      let deltaTxt = '';
+      if(refRM){
+        const delta = ((checkRM-refRM)/refRM)*100;
+        deltaTxt = delta>=0
+          ? ` — <span style="color:var(--ac)">▲ ${delta.toFixed(1)}% respecto a tu RM de referencia (${refRM.toFixed(1)} kg)</span>`
+          : ` — <span style="color:var(--ye)">▼ ${Math.abs(delta).toFixed(1)}% respecto a tu RM de referencia (${refRM.toFixed(1)} kg) — hoy conviene ir más conservador</span>`;
+      }
+      prevEl.innerHTML = `RM estimado <b>HOY</b>: <b style="color:var(--ac)">${checkRM.toFixed(1)} kg</b>${deltaTxt}`;
+    }else{
+      const refRec = getCurrentRecord(w.athleteId, it.exerciseId);
+      prevEl.innerHTML = refRM!=null
+        ? `Sin chequeo cargado — usando RM de referencia: <b>${refRM.toFixed(1)} kg</b> (${refRec?fmtDate(refRec.date):''}).`
+        : `Sin chequeo ni RM de referencia todavía — cargá un test en "Estimar RM" o hacé el chequeo acá arriba.`;
+    }
+  }
+}
+function onCheckInput(weekId, itemId){
+  const w = db.weeks.find(x=>x.id===weekId); if(!w) return;
+  const it = w.items.find(x=>x.id===itemId); if(!it) return;
+  const loadVal = document.getElementById('aw-check-load-'+itemId).value;
+  const repsVal = document.getElementById('aw-check-reps-'+itemId).value;
+  it.checkLoad = loadVal===''?null:Number(loadVal);
+  it.checkReps = repsVal===''?null:Number(repsVal);
+  saveDB();
+  updateItemSuggestion(w, it);
+}
+function saveDailyCheck(weekId, itemId){
+  const w = db.weeks.find(x=>x.id===weekId); if(!w) return;
+  const it = w.items.find(x=>x.id===itemId); if(!it) return;
+  const load = Number(document.getElementById('aw-check-load-'+itemId).value);
+  const reps = Number(document.getElementById('aw-check-reps-'+itemId).value);
+  if(!load || !reps){ toast('Ingresá peso y reps del chequeo', true); return; }
+  it.checkLoad = load; it.checkReps = reps;
+  saveDB();
+  const ath = getAthlete(w.athleteId), ex = getExercise(it.exerciseId);
+  const checkTotal = estimate1RM(totalLoad(ath, ex, load), reps, db.settings.formula);
+  const refTotal = getCurrentTotalRM(w.athleteId, it.exerciseId);
+  const askUpdate = confirm(
+    'RM estimado hoy: '+checkTotal.toFixed(1)+' kg'+(refTotal!=null?` (referencia actual: ${refTotal.toFixed(1)} kg)`:'')+
+    '.\n\n¿Usarlo como nuevo RM de referencia a largo plazo?\n\nAceptar = sí, reemplaza la referencia.\nCancelar = usarlo solo para calcular el % de hoy, sin tocar la referencia.'
+  );
+  addRecord(w.athleteId, it.exerciseId, w.startDate, load, reps, 'Chequeo del día antes de la sesión', 'daily-check', askUpdate);
+  toast('Chequeo guardado');
+  updateItemSuggestion(w, it);
 }
 function logActual(weekId, itemId){
   const w = db.weeks.find(x=>x.id===weekId);
@@ -1250,31 +1299,33 @@ function logActual(weekId, itemId){
   if(!it) return;
   const load = Number(document.getElementById('aw-actual-load-'+itemId).value);
   const reps = Number(document.getElementById('aw-actual-reps-'+itemId).value);
+  const rpe = document.getElementById('aw-actual-rpe-'+itemId).value;
   const note = document.getElementById('aw-actual-note-'+itemId).value.trim();
   if(!load || !reps){ toast('Ingresá peso real y repeticiones', true); return; }
-  it.actualLoad = load; it.actualReps = reps; it.actualNote = note; it.loggedAt = todayISO();
+  it.actualLoad = load; it.actualReps = reps; it.actualRpe = rpe===''?null:Number(rpe); it.actualNote = note; it.loggedAt = todayISO();
   saveDB();
   const ath = getAthlete(w.athleteId), ex = getExercise(it.exerciseId);
   const tl = totalLoad(ath, ex, load);
   const newEst = estimate1RM(tl, reps, db.settings.formula);
   const currentTotal = getCurrentTotalRM(w.athleteId, it.exerciseId);
   const setCurrent = currentTotal==null || newEst > currentTotal;
-  addRecord(w.athleteId, it.exerciseId, w.startDate, load, reps, note||'Registrado desde planificación semanal', 'session', setCurrent);
-  toast(setCurrent ? 'Guardado — nuevo RM actual: '+newEst.toFixed(1)+' kg' : 'Guardado');
+  const fullNote = [note, it.actualRpe!=null?('RPE '+it.actualRpe):''].filter(Boolean).join(' · ') || 'Registrado desde la sesión';
+  addRecord(w.athleteId, it.exerciseId, w.startDate, load, reps, fullNote, 'session', setCurrent);
+  toast(setCurrent ? 'Guardado — nuevo RM de referencia: '+newEst.toFixed(1)+' kg' : 'Guardado');
   renderWeekDetail();
 }
 function deleteWeek(id){
-  if(!confirm('¿Eliminar esta semana?')) return;
+  if(!confirm('¿Eliminar esta sesión?')) return;
   db.weeks = db.weeks.filter(w=>w.id!==id);
   saveDB();
   selectedWeekId = null;
   selectAthleteWeek(selectedWeekAthleteId);
-  toast('Semana eliminada');
+  toast('Sesión eliminada');
 }
 
 function openNewWeekModal(){
   const sel = document.getElementById('nw-template');
-  sel.innerHTML = '<option value="">— Semana en blanco —</option>' + (db.templates||[]).map(t=>`<option value="${t.id}">${esc(t.label)}</option>`).join('');
+  sel.innerHTML = '<option value="">— Sesión en blanco —</option>' + (db.templates||[]).map(t=>`<option value="${t.id}">${esc(t.label)}</option>`).join('');
   document.getElementById('nw-date').value = todayISO();
   document.getElementById('nw-label').value = '';
   document.getElementById('newweek-modal').style.display = 'flex';
@@ -1284,17 +1335,17 @@ function confirmNewWeek(){
   const tplId = document.getElementById('nw-template').value;
   const tpl = tplId ? db.templates.find(t=>t.id===tplId) : null;
   const date = document.getElementById('nw-date').value || todayISO();
-  const label = document.getElementById('nw-label').value.trim() || (tpl?tpl.label:'Nueva semana');
+  const label = document.getElementById('nw-label').value.trim() || (tpl?tpl.label:'Nueva sesión');
   const w = {
     id: uid(), athleteId: selectedWeekAthleteId, label, phase: tpl?tpl.phase:'base', notes: tpl?tpl.notes:'', startDate: date, templateId: tpl?tpl.id:null,
-    items: tpl ? (tpl.items||[]).map(it=>({id:uid(), exerciseId:it.exerciseId, pct:it.pct, series:it.series, repsMin:it.repsMin, repsMax:it.repsMax, note:it.note, actualLoad:null, actualReps:null, actualNote:'', loggedAt:null})) : []
+    items: tpl ? (tpl.items||[]).map(it=>({id:uid(), exerciseId:it.exerciseId, pct:it.pct, series:it.series, repsMin:it.repsMin, repsMax:it.repsMax, note:it.note, checkLoad:null, checkReps:null, actualLoad:null, actualReps:null, actualRpe:null, actualNote:'', loggedAt:null})) : []
   };
   db.weeks.push(w);
   saveDB();
   document.getElementById('newweek-modal').style.display = 'none';
   selectedWeekId = w.id;
   selectAthleteWeek(selectedWeekAthleteId);
-  toast('Semana creada');
+  toast('Sesión creada');
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1326,8 +1377,8 @@ function renderHistory(refreshFilters){
       <td style="cursor:pointer;color:var(--ac)" onclick="viewAthlete('${r.athleteId}')">${esc(athleteName(a))}</td>
       <td>${esc(ex?ex.name:'—')}</td>
       <td>${r.load} kg × ${r.reps}</td>
-      <td><b>${recEstTotal(r).toFixed(1)} kg</b> ${r.current?'<span class="badge badge-ac" style="margin-left:6px">Actual</span>':''}</td>
-      <td>${r.source==='session'?'<span class="badge badge-bl">Sesión</span>':'<span class="badge badge-gr">Test</span>'}</td>
+      <td><b>${recEstTotal(r).toFixed(1)} kg</b> ${r.current?'<span class="badge badge-ac" style="margin-left:6px">Referencia</span>':''}</td>
+      <td>${sourceBadge(r.source)}</td>
       <td class="small">${esc(r.note||'')}</td>
       <td><button class="btn btn-ghost btn-sm btn-danger" onclick="deleteRecord('${r.id}','${r.athleteId}');renderHistory()">✕</button></td>
     </tr>`;
