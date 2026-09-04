@@ -259,6 +259,8 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
       <div class="panel" id="panel-athletes">
         <div class="sec-hd">
           <div class="toolbar">
+            <div class="chip active" data-athtab="active" onclick="athleteTab('active')">Activos</div>
+            <div class="chip" data-athtab="inactive" onclick="athleteTab('inactive')">De baja</div>
             <input class="form-input" style="width:210px" placeholder="Buscar atleta…" oninput="filterAthletes(this.value)">
           </div>
           <button class="btn btn-primary" onclick="openAthleteModal()">+ Nuevo Atleta</button>
@@ -487,7 +489,9 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
     <input class="form-input" id="ath-notes" placeholder="Lesiones, observaciones…">
   </div>
   <div class="modal-ft">
-    <button class="btn" id="athlete-delete-btn" style="display:none" onclick="deleteAthleteFromModal()">Eliminar</button>
+    <button class="btn btn-danger" id="athlete-delete-btn" style="display:none" onclick="deleteAthleteFromModal()">Eliminar permanentemente</button>
+    <button class="btn" id="athlete-archive-btn" style="display:none" onclick="toggleArchiveFromModal()">Dar de baja</button>
+    <div class="topbar-spacer"></div>
     <button class="btn btn-ghost" onclick="closeModal(null,'athlete-modal')">Cancelar</button>
     <button class="btn btn-primary" onclick="saveAthlete()">Guardar</button>
   </div>
@@ -765,11 +769,22 @@ function closeModal(e, id){
 /* ═══════════════════════════════════════════════════════════════
    DASHBOARD
    ═══════════════════════════════════════════════════════════════ */
+function isActiveAthlete(a){ return a && a.active!==false; }
+// Active athletes, plus (if given) one specific inactive athlete so a direct link from
+// their profile still works even though they're normally excluded from these pickers.
+function selectableAthletes(includeId){
+  const active = (db.athletes||[]).filter(isActiveAthlete);
+  if(includeId){
+    const extra = getAthlete(includeId);
+    if(extra && !isActiveAthlete(extra) && !active.find(a=>a.id===includeId)) return [extra, ...active];
+  }
+  return active;
+}
 function renderDashboard(){
-  const aths = db.athletes||[];
+  const aths = (db.athletes||[]).filter(isActiveAthlete);
   const recs = (db.records||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById('dash-stats').innerHTML = `
-    <div class="stat-card"><div class="stat-num">${aths.length}</div><div class="stat-label">Atletas</div></div>
+    <div class="stat-card"><div class="stat-num">${aths.length}</div><div class="stat-label">Atletas activos</div></div>
     <div class="stat-card"><div class="stat-num">${(db.exercises||[]).length}</div><div class="stat-label">Ejercicios</div></div>
     <div class="stat-card"><div class="stat-num">${recs.length}</div><div class="stat-label">Registros de RM</div></div>
     <div class="stat-card"><div class="stat-num">${(db.weeks||[]).length}</div><div class="stat-label">Sesiones registradas</div></div>
@@ -794,23 +809,30 @@ function renderDashboard(){
   }).join('') : `<tr><td colspan="6" class="empty">Todavía no hay registros de RM.</td></tr>`;
 }
 
-function athleteCardHTML(a){
+function athleteCardHTML(a, manage){
   const exs = (db.exercises||[]).slice(0,5);
   const initials = ((a.firstName||' ')[0]+(a.lastName||' ')[0]).toUpperCase();
+  const inactive = !isActiveAthlete(a);
   const rows = exs.map(ex=>{
     const r = getCurrentRecord(a.id, ex.id);
     const est = r ? recEstTotal(r) : null;
     return `<div class="ath-rm-row"><span>${esc(ex.name)}</span><b>${est?est.toFixed(1)+' kg':'—'}</b></div>`;
   }).join('');
-  return `<div class="ath-card" onclick="viewAthlete('${a.id}')">
+  return `<div class="ath-card" onclick="viewAthlete('${a.id}')" style="${inactive?'opacity:.6':''}">
     <div class="ath-card-hd">
       <div class="ath-avatar">${initials}</div>
       <div>
-        <div class="ath-name">${esc(athleteName(a))}</div>
+        <div class="ath-name">${esc(athleteName(a))}${inactive?' <span class="badge badge-gr" style="vertical-align:middle">De baja</span>':''}</div>
         <div class="ath-meta">${esc(a.sport||'—')}${a.bodyweight?' · '+a.bodyweight+' kg':''}</div>
       </div>
     </div>
     ${rows}
+    ${manage?`<div class="flex gap8 flex-wrap no-print" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2)" onclick="event.stopPropagation()">
+      ${inactive
+        ? `<button class="btn btn-ghost btn-sm" onclick="unarchiveAthlete('${a.id}')">↩ Reactivar</button>`
+        : `<button class="btn btn-ghost btn-sm" onclick="archiveAthlete('${a.id}')">📤 Dar de baja</button>`}
+      <button class="btn btn-ghost btn-sm btn-danger" onclick="hardDeleteAthlete('${a.id}')">🗑 Eliminar</button>
+    </div>`:''}
   </div>`;
 }
 function viewAthlete(id){ nav('athlete-profile',{id}); }
@@ -818,17 +840,54 @@ function viewAthlete(id){ nav('athlete-profile',{id}); }
 /* ═══════════════════════════════════════════════════════════════
    ATHLETES
    ═══════════════════════════════════════════════════════════════ */
+let athleteTabState = 'active';
+function athleteTab(tab){
+  athleteTabState = tab;
+  document.querySelectorAll('#panel-athletes .chip').forEach(c=>c.classList.toggle('active', c.dataset.athtab===tab));
+  const search = document.querySelector('#panel-athletes input.form-input');
+  filterAthletes(search?search.value:'');
+}
+function athletesForTab(){
+  return (db.athletes||[]).filter(a=>athleteTabState==='active' ? isActiveAthlete(a) : !isActiveAthlete(a));
+}
 function renderAthletes(){
   const grid = document.getElementById('athletes-grid');
-  const aths = db.athletes||[];
-  grid.innerHTML = aths.length ? aths.map(a=>athleteCardHTML(a)).join('')
-    : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👤</div><div class="empty-title">Sin atletas</div><div class="empty-sub">Cargá el primero para empezar a estimar RM</div></div>`;
+  const aths = athletesForTab();
+  grid.innerHTML = aths.length ? aths.map(a=>athleteCardHTML(a,true)).join('')
+    : (athleteTabState==='active'
+        ? `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👤</div><div class="empty-title">Sin atletas activos</div><div class="empty-sub">Cargá el primero para empezar a estimar RM</div></div>`
+        : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📤</div><div class="empty-title">Nadie dado de baja</div><div class="empty-sub">Los atletas que ya no entrenan con vos van a aparecer acá cuando los des de baja</div></div>`);
 }
 function filterAthletes(q){
   q = (q||'').toLowerCase();
   const grid = document.getElementById('athletes-grid');
-  const list = (db.athletes||[]).filter(a=>athleteName(a).toLowerCase().includes(q) || (a.sport||'').toLowerCase().includes(q));
-  grid.innerHTML = list.length ? list.map(a=>athleteCardHTML(a)).join('') : `<div class="empty" style="grid-column:1/-1">Sin resultados</div>`;
+  const list = athletesForTab().filter(a=>athleteName(a).toLowerCase().includes(q) || (a.sport||'').toLowerCase().includes(q));
+  grid.innerHTML = list.length ? list.map(a=>athleteCardHTML(a,true)).join('') : `<div class="empty" style="grid-column:1/-1">Sin resultados</div>`;
+}
+function archiveAthlete(id){
+  const a = getAthlete(id); if(!a) return;
+  if(!confirm(`¿Dar de baja a ${athleteName(a)}? No se borra ningún dato — deja de aparecer entre los atletas activos y podés reactivarlo cuando quieras desde "De baja".`)) return;
+  a.active = false;
+  saveDB();
+  toast('Atleta dado de baja');
+  if(currentPanel==='athletes') renderAthletes(); else if(currentPanel==='dashboard') renderDashboard();
+}
+function unarchiveAthlete(id){
+  const a = getAthlete(id); if(!a) return;
+  a.active = true;
+  saveDB();
+  toast('Atleta reactivado');
+  if(currentPanel==='athletes') renderAthletes(); else if(currentPanel==='dashboard') renderDashboard();
+}
+function hardDeleteAthlete(id){
+  const a = getAthlete(id); if(!a) return;
+  if(!confirm(`¿Eliminar PERMANENTEMENTE a ${athleteName(a)} junto con todo su historial de RM y sesiones? Esta acción no se puede deshacer. Si solo dejó de entrenar con vos, mejor usá "Dar de baja".`)) return;
+  db.athletes = db.athletes.filter(x=>x.id!==id);
+  db.records = db.records.filter(r=>r.athleteId!==id);
+  db.weeks = db.weeks.filter(w=>w.athleteId!==id);
+  saveDB();
+  toast('Atleta eliminado permanentemente');
+  if(currentPanel==='athletes') renderAthletes(); else if(currentPanel==='dashboard') renderDashboard();
 }
 
 let editingAthleteId = null;
@@ -837,6 +896,9 @@ function openAthleteModal(id){
   document.getElementById('athlete-modal-title').textContent = id ? 'Editar Atleta' : 'Nuevo Atleta';
   document.getElementById('athlete-delete-btn').style.display = id ? 'inline-flex' : 'none';
   const a = id ? getAthlete(id) : null;
+  const archiveBtn = document.getElementById('athlete-archive-btn');
+  archiveBtn.style.display = id ? 'inline-flex' : 'none';
+  archiveBtn.textContent = (a && !isActiveAthlete(a)) ? '↩ Reactivar' : '📤 Dar de baja';
   document.getElementById('ath-first').value = a?a.firstName:'';
   document.getElementById('ath-last').value = a?a.lastName:'';
   document.getElementById('ath-bw').value = a?a.bodyweight||'':'';
@@ -862,7 +924,7 @@ function saveAthlete(){
     const idx = db.athletes.findIndex(x=>x.id===editingAthleteId);
     db.athletes[idx] = Object.assign({}, db.athletes[idx], data);
   }else{
-    data.id = uid(); data.createdAt = todayISO();
+    data.id = uid(); data.createdAt = todayISO(); data.active = true;
     db.athletes.push(data);
   }
   saveDB();
@@ -872,15 +934,19 @@ function saveAthlete(){
   else if(currentPanel==='athlete-profile') renderAthleteProfile(editingAthleteId||data.id);
   else if(currentPanel==='dashboard') renderDashboard();
 }
+function toggleArchiveFromModal(){
+  if(!editingAthleteId) return;
+  const a = getAthlete(editingAthleteId); if(!a) return;
+  if(isActiveAthlete(a)) archiveAthlete(editingAthleteId); else unarchiveAthlete(editingAthleteId);
+  document.getElementById('athlete-modal').style.display = 'none';
+  if(currentPanel==='athlete-profile') renderAthleteProfile(editingAthleteId);
+}
 function deleteAthleteFromModal(){
   if(!editingAthleteId) return;
-  if(!confirm('¿Eliminar este atleta y todos sus registros de RM? Esta acción no se puede deshacer.')) return;
-  db.athletes = db.athletes.filter(a=>a.id!==editingAthleteId);
-  db.records = db.records.filter(r=>r.athleteId!==editingAthleteId);
-  db.weeks = db.weeks.filter(w=>w.athleteId!==editingAthleteId);
-  saveDB();
+  const id = editingAthleteId;
+  hardDeleteAthlete(id);
+  if(getAthlete(id)) return; // user cancelled the confirm inside hardDeleteAthlete
   document.getElementById('athlete-modal').style.display = 'none';
-  toast('Atleta eliminado');
   nav('athletes');
 }
 
@@ -907,12 +973,15 @@ function renderAthleteProfile(id){
       <div class="flex items-center gap12">
         <div class="ath-avatar" style="width:52px;height:52px;font-size:18px">${((a.firstName||' ')[0]+(a.lastName||' ')[0]).toUpperCase()}</div>
         <div>
-          <div style="font-size:20px;font-weight:800">${esc(athleteName(a))}</div>
+          <div style="font-size:20px;font-weight:800">${esc(athleteName(a))} ${!isActiveAthlete(a)?'<span class="badge badge-gr" style="vertical-align:middle">De baja</span>':''}</div>
           <div class="small">${esc(a.sport||'—')}${a.bodyweight?' · '+a.bodyweight+' kg':''}${daysToMatch!=null?' · Próximo partido en '+daysToMatch+' días':''}</div>
         </div>
       </div>
-      <div class="flex gap8">
+      <div class="flex gap8 flex-wrap">
         <button class="btn btn-ghost btn-sm" onclick="openAthleteModal('${a.id}')">✎ Editar</button>
+        ${isActiveAthlete(a)
+          ? `<button class="btn btn-ghost btn-sm" onclick="archiveAthlete('${a.id}');renderAthleteProfile('${a.id}')">📤 Dar de baja</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="unarchiveAthlete('${a.id}');renderAthleteProfile('${a.id}')">↩ Reactivar</button>`}
         <button class="btn btn-sm" onclick="nav('planning');planTab('athlete-weeks');selectAthleteWeek('${a.id}')">📅 Planificación</button>
         <button class="btn btn-primary btn-sm" onclick="nav('estimate');document.getElementById('est-athlete').value='${a.id}';updateEstimate()">+ Nuevo Registro</button>
       </div>
@@ -1060,7 +1129,8 @@ function renderEstimatePanel(){
   const athSel = document.getElementById('est-athlete');
   const exSel = document.getElementById('est-exercise');
   const prevAth = athSel.value, prevEx = exSel.value;
-  athSel.innerHTML = (db.athletes||[]).map(a=>`<option value="${a.id}">${esc(athleteName(a))}</option>`).join('') || '<option value="">— sin atletas —</option>';
+  const athOptions = selectableAthletes(navData.athleteId);
+  athSel.innerHTML = athOptions.map(a=>`<option value="${a.id}">${esc(athleteName(a))}${!isActiveAthlete(a)?' (de baja)':''}</option>`).join('') || '<option value="">— sin atletas —</option>';
   exSel.innerHTML = (db.exercises||[]).map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
   if(navData.athleteId) athSel.value = navData.athleteId;
   else if(prevAth) athSel.value = prevAth;
@@ -1227,7 +1297,7 @@ function renderAthleteWeeksView(){
   el.innerHTML = `
     <div class="sec-hd">
       <select class="form-input form-select" style="width:220px" id="aw-athlete-select" onchange="selectAthleteWeek(this.value)"></select>
-      <button class="btn btn-primary" onclick="openNewWeekModal()" ${!(db.athletes||[]).length?'disabled':''}>+ Nueva Sesión</button>
+      <button class="btn btn-primary" onclick="openNewWeekModal()" ${!selectableAthletes(navData.athleteId).length?'disabled':''}>+ Nueva Sesión</button>
     </div>
     <div class="flex gap16 flex-wrap" style="align-items:flex-start">
       <div style="min-width:220px" id="aw-weeks-list"></div>
@@ -1235,9 +1305,10 @@ function renderAthleteWeeksView(){
     </div>
   `;
   const sel = document.getElementById('aw-athlete-select');
-  sel.innerHTML = (db.athletes||[]).map(a=>`<option value="${a.id}">${esc(athleteName(a))}</option>`).join('') || '<option value="">— sin atletas —</option>';
+  const athOptions = selectableAthletes(navData.athleteId);
+  sel.innerHTML = athOptions.map(a=>`<option value="${a.id}">${esc(athleteName(a))}${!isActiveAthlete(a)?' (de baja)':''}</option>`).join('') || '<option value="">— sin atletas —</option>';
   if(navData.athleteId) selectedWeekAthleteId = navData.athleteId;
-  if(!selectedWeekAthleteId && db.athletes && db.athletes.length) selectedWeekAthleteId = db.athletes[0].id;
+  if(!selectedWeekAthleteId && athOptions.length) selectedWeekAthleteId = athOptions[0].id;
   if(selectedWeekAthleteId) sel.value = selectedWeekAthleteId;
   selectAthleteWeek(selectedWeekAthleteId);
 }
@@ -1446,7 +1517,7 @@ function renderHistory(refreshFilters){
   const athSel = document.getElementById('hist-athlete');
   const exSel = document.getElementById('hist-exercise');
   if(refreshFilters){
-    athSel.innerHTML = '<option value="">Todos los atletas</option>' + (db.athletes||[]).map(a=>`<option value="${a.id}">${esc(athleteName(a))}</option>`).join('');
+    athSel.innerHTML = '<option value="">Todos los atletas</option>' + (db.athletes||[]).map(a=>`<option value="${a.id}">${esc(athleteName(a))}${!isActiveAthlete(a)?' (de baja)':''}</option>`).join('');
     exSel.innerHTML = '<option value="">Todos los ejercicios</option>' + (db.exercises||[]).map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
   }
   const athId = athSel.value, exId = exSel.value;
@@ -1583,7 +1654,7 @@ function renderPlayerGate(){
   document.getElementById('player-gate').style.display = 'flex';
   playerAthleteId = null;
   const grid = document.getElementById('player-gate-grid');
-  const aths = db.athletes||[];
+  const aths = (db.athletes||[]).filter(isActiveAthlete);
   grid.innerHTML = aths.length ? aths.map(a=>`
     <div class="ath-card" style="text-align:center" onclick="loginPlayerAttempt('${a.id}')">
       <div class="ath-avatar" style="width:52px;height:52px;font-size:18px;margin:0 auto 10px">${((a.firstName||' ')[0]+(a.lastName||' ')[0]).toUpperCase()}</div>
