@@ -220,6 +220,12 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 </head>
 <body>
 
+<!-- ══ SPLASH ══ — pantalla de apertura con el logo, se muestra sola hasta que
+     init() decide a qué pantalla final entrar (login, dashboard o modo jugador). -->
+<div id="splash-screen" style="position:fixed;inset:0;z-index:9999;background:var(--dk);display:flex;align-items:center;justify-content:center;transition:opacity .4s ease">
+  <img src="assets/logo.jpg" alt="Valen Botello Athletic Performance" style="width:170px;border-radius:20px;box-shadow:0 0 70px rgba(47,111,235,.4)">
+</div>
+
 <!-- ══ LOGIN SCREEN (coach) ══ -->
 <div id="login-screen" style="display:none;min-height:100vh;background:var(--dk);align-items:center;justify-content:center;padding:24px">
   <div style="width:100%;max-width:360px">
@@ -449,15 +455,17 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
   <div id="player-gate" style="min-height:100vh;background:var(--dk);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
     <div style="text-align:center;margin-bottom:28px">
       <img src="assets/logo.jpg" alt="Valen Botello Athletic Performance" style="width:190px;max-width:60vw;border-radius:18px;display:block;margin:0 auto 18px;box-shadow:0 0 60px rgba(47,111,235,.35)" onerror="this.style.display='none'">
-      <div style="font-family:var(--fd);font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:.4px">¿Quién sos?</div>
-      <div class="small">Tocá tu nombre para cargar tus datos y ver tu progreso</div>
+      <div style="font-family:var(--fd);font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:.4px" id="player-gate-title">¿Quién sos?</div>
+      <div class="small" id="player-gate-sub">Tocá tu nombre para cargar tus datos y ver tu progreso</div>
     </div>
     <div class="g-auto" id="player-gate-grid" style="max-width:760px;width:100%"></div>
-    <div style="margin-top:26px">
-      <button class="btn btn-primary btn-sm" onclick="openSelfRegisterModal()">+ Soy nuevo, quiero crear mi usuario</button>
-    </div>
-    <div style="margin-top:12px">
-      <button class="btn btn-ghost btn-sm" onclick="exitToCoach()">🔒 Modo Coach</button>
+    <div id="player-gate-actions">
+      <div style="margin-top:26px">
+        <button class="btn btn-primary btn-sm" onclick="openSelfRegisterModal()">+ Soy nuevo, quiero crear mi usuario</button>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn btn-ghost btn-sm" onclick="exitToCoach()">🔒 Modo Coach</button>
+      </div>
     </div>
   </div>
 
@@ -964,6 +972,18 @@ function athleteCardHTML(a, manage){
   </div>`;
 }
 function viewAthlete(id){ nav('athlete-profile',{id}); }
+// Personal Modo Jugador link for one athlete: skips the "¿Quién sos?" roster
+// entirely (see enterPlayerMode's ?jugador&a=<id> handling) — the athlete
+// never sees anyone else's name, just their own PIN prompt (if tienen uno).
+async function copyDirectPlayerLink(athleteId){
+  const url = `${location.origin}${location.pathname}?jugador&a=${athleteId}`;
+  try{
+    await navigator.clipboard.writeText(url);
+    toast('Link copiado — mandaselo a tu alumno');
+  }catch(e){
+    window.prompt('Copiá este link y mandaselo a tu alumno:', url);
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    ATHLETES
@@ -1117,6 +1137,7 @@ function renderAthleteProfile(id){
       </div>
       <div class="flex gap8 flex-wrap">
         <button class="btn btn-ghost btn-sm" onclick="openAthleteModal('${a.id}')">✎ Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyDirectPlayerLink('${a.id}')" title="Link para que entre directo a su perfil, sin elegir su nombre de una lista">🔗 Link directo</button>
         ${isActiveAthlete(a)
           ? `<button class="btn btn-ghost btn-sm" onclick="archiveAthlete('${a.id}')">📤 Dar de baja</button>`
           : `<button class="btn btn-ghost btn-sm" onclick="unarchiveAthlete('${a.id}')">↩ Reactivar</button>`}
@@ -1602,11 +1623,52 @@ async function enterPlayerMode(){
   document.getElementById('player-gate-grid').innerHTML = `<div class="empty" style="grid-column:1/-1">Cargando…</div>`;
   const {data, error} = await supa.rpc('player_list_athletes');
   playerGateList = error ? [] : (data||[]);
+
+  // A personal link (?jugador&a=<id>, from "🔗 Link directo" in el perfil del
+  // atleta) skips the "¿Quién sos?" roster entirely — el atleta nunca ve los
+  // nombres de los demás, solo el suyo (con su PIN si tiene uno cargado).
+  const directId = new URLSearchParams(window.location.search).get('a');
+  if(directId){
+    const entry = playerGateList.find(a=>a.id===directId);
+    if(entry){
+      renderPlayerDirectEntry(entry);
+      if(entry.hasPin){
+        pendingPinAction = {athleteId:directId};
+        openPinModal('PIN de '+entry.firstName);
+      }else{
+        await attemptPlayerLogin(directId, '');
+      }
+      return;
+    }
+    toast('No encontramos ese acceso directo — elegí tu nombre de la lista', true);
+  }
   renderPlayerGate();
+}
+// Single-card view for a personal direct link: shows just THAT athlete while
+// they type their PIN (if tienen uno), en vez del listado completo de atletas.
+function renderPlayerDirectEntry(entry){
+  document.getElementById('player-home').style.display = 'none';
+  document.getElementById('player-gate').style.display = 'flex';
+  document.getElementById('player-gate-title').textContent = '¡Hola, '+entry.firstName+'!';
+  document.getElementById('player-gate-sub').textContent = entry.hasPin ? 'Ingresá tu PIN para entrar a tu perfil' : 'Entrando a tu perfil…';
+  document.getElementById('player-gate-actions').style.display = 'none';
+  document.getElementById('player-gate-grid').innerHTML = `
+    <div class="ath-card" style="text-align:center;max-width:220px;margin:0 auto" onclick="loginPlayerAttempt('${entry.id}')" title="Tocá para reintentar">
+      <div class="ath-avatar" style="width:52px;height:52px;font-size:18px;margin:0 auto 10px">${((entry.firstName||' ')[0]+(entry.lastName||' ')[0]).toUpperCase()}</div>
+      <div class="ath-name">${esc((entry.firstName+' '+entry.lastName).trim())}</div>
+      <div class="ath-meta">${esc(entry.sport||'')}${entry.hasPin?' 🔒':''}</div>
+    </div>
+    <div style="grid-column:1/-1;text-align:center;margin-top:18px">
+      <button class="btn btn-ghost btn-sm" onclick="renderPlayerGate()">¿No sos vos? Ver todos los usuarios</button>
+    </div>
+  `;
 }
 function renderPlayerGate(){
   document.getElementById('player-home').style.display = 'none';
   document.getElementById('player-gate').style.display = 'flex';
+  document.getElementById('player-gate-title').textContent = '¿Quién sos?';
+  document.getElementById('player-gate-sub').textContent = 'Tocá tu nombre para cargar tus datos y ver tu progreso';
+  document.getElementById('player-gate-actions').style.display = 'block';
   playerAthleteId = null;
   const grid = document.getElementById('player-gate-grid');
   grid.innerHTML = playerGateList.length ? playerGateList.map(a=>`
@@ -1911,12 +1973,27 @@ async function doLogout(){
 /* ═══════════════════════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════════════════════ */
+// Keeps the branded splash up for at least SPLASH_MIN_MS from page load,
+// so it reads as an intentional opening screen instead of a flash you'd
+// only notice on a slow connection — then fades it out.
+const SPLASH_MIN_MS = 900;
+const splashStart = Date.now();
+async function hideSplash(){
+  const elapsed = Date.now() - splashStart;
+  if(elapsed < SPLASH_MIN_MS) await new Promise(r=>setTimeout(r, SPLASH_MIN_MS-elapsed));
+  const splash = document.getElementById('splash-screen');
+  if(!splash) return;
+  splash.style.opacity = '0';
+  setTimeout(()=>{ splash.style.display = 'none'; }, 400);
+}
 async function init(){
-  // A link with ?jugador (e.g. .../?jugador) drops the visitor straight into
-  // Modo Jugador — for sharing with athletes so they never see (or need) the
-  // coach login at all.
+  // A link with ?jugador (e.g. .../?jugador, or ?jugador&a=<id> para el link
+  // personal de un atleta puntual) drops the visitor straight into Modo
+  // Jugador — para compartir con atletas sin que vean ni necesiten el login
+  // del coach.
   if(new URLSearchParams(window.location.search).has('jugador')){
     await enterPlayerMode();
+    await hideSplash();
     return;
   }
   const {data:{session}} = await supa.auth.getSession();
@@ -1929,6 +2006,7 @@ async function init(){
   }else{
     showLoginScreen();
   }
+  await hideSplash();
 }
 init();
 </script>
