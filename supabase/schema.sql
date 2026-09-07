@@ -37,11 +37,17 @@ create table if not exists public.records (
   date date not null,
   load numeric not null,
   reps integer not null,
+  rir numeric,
   note text,
   source text not null default 'test',
   current boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+-- rir (reps en reserva) se agregó después del lanzamiento inicial — esta
+-- línea hace que correr el script de nuevo sobre una base ya existente
+-- también la sume, sin tener que borrar y recrear la tabla.
+alter table public.records add column if not exists rir numeric;
 
 create table if not exists public.templates (
   id text primary key,
@@ -263,6 +269,15 @@ begin
 end;
 $$;
 
+-- Se le agregó el parámetro p_rir después del lanzamiento inicial. Postgres
+-- distingue funciones por su lista de parámetros, así que un simple "create
+-- or replace" con un parámetro de más deja la versión vieja (10 parámetros)
+-- viviendo en paralelo en vez de reemplazarla — hay que borrarla a mano
+-- primero para que solo quede la nueva.
+drop function if exists public.player_add_record(
+  text, text, text, text, date, numeric, int, text, text, boolean
+);
+
 create or replace function public.player_add_record(
   p_athlete_id text,
   p_pin text,
@@ -273,7 +288,8 @@ create or replace function public.player_add_record(
   p_reps int,
   p_note text,
   p_source text,
-  p_set_current boolean
+  p_set_current boolean,
+  p_rir numeric default null
 )
 returns void
 language plpgsql
@@ -303,10 +319,10 @@ begin
   end if;
 
   insert into public.records(
-    id, coach_id, athlete_id, exercise_id, date, load, reps, note, source, current
+    id, coach_id, athlete_id, exercise_id, date, load, reps, rir, note, source, current
   )
   values (
-    p_id, v_coach, p_athlete_id, p_exercise_id, p_date, p_load, p_reps, p_note, p_source, p_set_current
+    p_id, v_coach, p_athlete_id, p_exercise_id, p_date, p_load, p_reps, p_rir, p_note, p_source, p_set_current
   );
 end;
 $$;
@@ -423,7 +439,7 @@ grant execute
 
 grant execute
   on function public.player_add_record(
-    text, text, text, text, date, numeric, int, text, text, boolean
+    text, text, text, text, date, numeric, int, text, text, boolean, numeric
   )
   to anon, authenticated;
 

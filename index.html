@@ -648,11 +648,11 @@ function rowToExercise(r){
 }
 function recordToRow(r){
   return { id:r.id, athlete_id:r.athleteId, exercise_id:r.exerciseId, date:r.date,
-    load:r.load, reps:r.reps, note:r.note||null, source:r.source, current: !!r.current };
+    load:r.load, reps:r.reps, rir: r.rir==null||r.rir===''?null:Number(r.rir), note:r.note||null, source:r.source, current: !!r.current };
 }
 function rowToRecord(r){
   return { id:r.id, athleteId:r.athlete_id, exerciseId:r.exercise_id, date:r.date,
-    load:Number(r.load), reps:Number(r.reps), note:r.note, source:r.source, current:r.current };
+    load:Number(r.load), reps:Number(r.reps), rir: r.rir==null?null:Number(r.rir), note:r.note, source:r.source, current:r.current };
 }
 function settingsToRow(s){
   const row = {};
@@ -730,6 +730,13 @@ function estimate1RM(load, reps, formula){
 function formulaLabel(f){
   return {epley:'Epley',brzycki:'Brzycki',lombardi:'Lombardi',average:'Promedio (Epley+Brzycki+Lombardi)'}[f]||'Epley';
 }
+// A set done with RIR (reps in reserve) in hand is equivalent, for 1RM
+// estimation purposes, to doing that many extra reps to failure — 5 reps
+// @ RIR 2 estimates the same as 7 reps to failure. Records without an rir
+// (old data, or a straight-to-failure test) fall back to the raw reps.
+function effectiveReps(reps, rir){
+  return (Number(reps)||0) + (Number(rir)||0);
+}
 function getExercise(id){ return (db.exercises||[]).find(e=>e.id===id); }
 function getAthlete(id){ return (db.athletes||[]).find(a=>a.id===id); }
 function athleteName(a){ return a ? (a.firstName+' '+a.lastName).trim() : '—'; }
@@ -770,7 +777,7 @@ function getCurrentTotalRM(athleteId, exerciseId){
 function recEstTotal(r){
   const ath = getAthlete(r.athleteId), ex = getExercise(r.exerciseId);
   const tl = totalLoad(ath, ex, r.load);
-  return estimate1RM(tl, r.reps, db.settings.formula);
+  return estimate1RM(tl, effectiveReps(r.reps, r.rir), db.settings.formula);
 }
 // Coach-only (called from the athlete profile's editable progression table).
 async function setCurrentRecord(recordId){
@@ -789,13 +796,14 @@ async function setCurrentRecord(recordId){
 // in player mode (appMode==='player') it goes through the PIN-checked
 // player_add_record function instead, since the athlete has no auth session.
 // Returns the new record, or null if the save failed (caller should bail).
-async function addRecord(athleteId, exerciseId, date, load, reps, note, source, setCurrent){
-  const rec = {id:uid(), athleteId, exerciseId, date: date||todayISO(), load:Number(load), reps:Number(reps), note:note||'', source:source||'test', current:false};
+async function addRecord(athleteId, exerciseId, date, load, reps, note, source, setCurrent, rir){
+  const rec = {id:uid(), athleteId, exerciseId, date: date||todayISO(), load:Number(load), reps:Number(reps),
+    rir: (rir==null||rir==='')?null:Number(rir), note:note||'', source:source||'test', current:false};
   if(appMode==='player'){
     const {error} = await supa.rpc('player_add_record', {
       p_athlete_id: athleteId, p_pin: playerPin, p_id: rec.id, p_exercise_id: exerciseId,
       p_date: rec.date, p_load: rec.load, p_reps: rec.reps, p_note: rec.note,
-      p_source: rec.source, p_set_current: !!setCurrent
+      p_source: rec.source, p_set_current: !!setCurrent, p_rir: rec.rir
     });
     if(error){ toast('No se pudo guardar (revisá tu conexión)', true); return null; }
   }else{
@@ -1149,7 +1157,7 @@ function buildProgressionSectionsHTML(athleteId, editable){
       prevEst = est;
       return `<tr>
         <td>${fmtDate(r.date)}</td>
-        <td><b>${r.load} kg</b> × ${r.reps}</td>
+        <td><b>${r.load} kg</b> × ${r.reps}${r.rir!=null?` <span class="small">(RIR ${r.rir})</span>`:''}</td>
         <td>${est.toFixed(1)} kg</td>
         <td>${deltaHTML}</td>
         <td>${sourceBadge(r.source)}</td>
@@ -1314,6 +1322,8 @@ async function saveEstimate(){
    ═══════════════════════════════════════════════════════════════ */
 let perfPeriod = 'month'; // 'week' | 'month' | 'year'
 let perfExerciseId = null;
+let perfMetric = 'rm'; // 'rm' (RM estimado) | 'volume' (kg totales levantados)
+function metricLabel(m){ return m==='volume' ? 'Volumen (kg)' : 'RM estimado'; }
 
 function periodLabel(p){ return {week:'Semana', month:'Mes', year:'Año'}[p]||'Mes'; }
 const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -1331,23 +1341,26 @@ function periodBucketLabel(key, period){
   if(period==='month'){ const [y,m] = key.split('-'); return MONTH_SHORT[Number(m)-1]+' '+y; }
   return fmtDate(key);
 }
-// Groups an athlete+exercise's records into chronological period buckets,
-// each holding the average estimated RM of that bucket — so several
-// check-ins in the same week/month don't each get their own point.
-function buildPerfPoints(athleteId, exerciseId, period){
+// Groups an athlete+exercise's records into chronological period buckets.
+// metric 'rm' averages the estimated RM of the bucket (several check-ins in
+// the same week/month don't each get their own point); metric 'volume' adds
+// up the actual kg moved (load × reps, external weight — not RM-adjusted) so
+// a period with more/bigger working sets shows up as more total work done.
+function buildPerfPoints(athleteId, exerciseId, period, metric){
   const recs = (db.records||[]).filter(r=>r.athleteId===athleteId && r.exerciseId===exerciseId);
   if(!recs.length) return [];
   const buckets = new Map();
   recs.forEach(r=>{
     const key = periodKey(r.date, period);
-    const est = recEstTotal(r);
     if(!buckets.has(key)) buckets.set(key, {sum:0, n:0, lastDate:r.date});
     const b = buckets.get(key);
-    b.sum += est; b.n++;
+    if(metric==='volume') b.sum += (Number(r.load)||0) * (Number(r.reps)||0);
+    else b.sum += recEstTotal(r);
+    b.n++;
     if(r.date>=b.lastDate) b.lastDate = r.date;
   });
   return Array.from(buckets.entries())
-    .map(([key,b])=>({key, date:b.lastDate, val:b.sum/b.n}))
+    .map(([key,b])=>({key, date:b.lastDate, val: metric==='volume' ? b.sum : b.sum/b.n}))
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
 }
 function perfChartSVG(points, period){
@@ -1374,16 +1387,17 @@ function perfChartSVG(points, period){
     ${dots}${labels}
   </svg>`;
 }
-function perfDeltaHTML(points, period){
-  if(!points.length) return '<div class="small">Todavía no hay registros de RM para este ejercicio.</div>';
-  if(points.length<2) return `<div class="small">Con un solo período (${periodLabel(period).toLowerCase()}) todavía no se puede ver una tendencia — seguí registrando.</div>`;
+function perfDeltaHTML(points, period, metric){
+  const what = metric==='volume' ? 'volumen total' : 'RM estimado';
+  if(!points.length) return `<div class="small">Todavía no hay registros para este ejercicio.</div>`;
+  if(points.length<2) return `<div class="small">Con un solo período (${periodLabel(period).toLowerCase()}) todavía no se puede ver una tendencia de ${what} — seguí registrando.</div>`;
   const first = points[0].val, last = points[points.length-1].val;
   const delta = last-first;
   const pct = first ? (delta/first)*100 : 0;
-  if(Math.abs(pct)<0.5) return `<div class="small">Se mantuvo estable en <b>${last.toFixed(1)} kg</b> desde ${fmtDate(points[0].date)}.</div>`;
+  if(Math.abs(pct)<0.5) return `<div class="small">${esc(what[0].toUpperCase()+what.slice(1))} se mantuvo estable en <b>${last.toFixed(1)} kg</b> desde ${fmtDate(points[0].date)}.</div>`;
   return delta>0
-    ? `<div><span style="color:var(--pos);font-weight:700">▲ Mejoró ${pct.toFixed(1)}%</span> <span class="small">— de ${first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`
-    : `<div><span style="color:var(--ye);font-weight:700">▼ Bajó ${Math.abs(pct).toFixed(1)}%</span> <span class="small">— de ${first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`;
+    ? `<div><span style="color:var(--pos);font-weight:700">▲ Mejoró ${pct.toFixed(1)}%</span> <span class="small">— ${what}: de ${first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`
+    : `<div><span style="color:var(--ye);font-weight:700">▼ Bajó ${Math.abs(pct).toFixed(1)}%</span> <span class="small">— ${what}: de ${first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`;
 }
 // Renders the whole card (exercise picker + semana/mes/año chips + chart +
 // mejora/baja summary) for one athlete into containerId. Shared by the
@@ -1397,21 +1411,24 @@ function renderPerformanceSection(athleteId, containerId){
     return;
   }
   if(!perfExerciseId || !exs.find(e=>e.id===perfExerciseId)) perfExerciseId = exs[0].id;
-  const points = buildPerfPoints(athleteId, perfExerciseId, perfPeriod);
+  const points = buildPerfPoints(athleteId, perfExerciseId, perfPeriod, perfMetric);
   const chart = perfChartSVG(points, perfPeriod);
   el.innerHTML = `
     <div class="card">
-      <div class="sec-hd" style="margin-bottom:14px">
+      <div class="sec-hd" style="margin-bottom:10px">
         <select class="form-input form-select" style="width:220px" onchange="perfExerciseId=this.value;renderPerformanceSection('${athleteId}','${containerId}')">
           ${exs.map(e=>`<option value="${e.id}" ${e.id===perfExerciseId?'selected':''}>${esc(e.name)}</option>`).join('')}
         </select>
         <div class="toolbar">
-          ${['week','month','year'].map(p=>`<div class="chip ${perfPeriod===p?'active':''}" onclick="perfPeriod='${p}';renderPerformanceSection('${athleteId}','${containerId}')">${periodLabel(p)}</div>`).join('')}
+          ${['rm','volume'].map(m=>`<div class="chip ${perfMetric===m?'active':''}" onclick="perfMetric='${m}';renderPerformanceSection('${athleteId}','${containerId}')">${metricLabel(m)}</div>`).join('')}
         </div>
+      </div>
+      <div class="toolbar mb12">
+        ${['week','month','year'].map(p=>`<div class="chip ${perfPeriod===p?'active':''}" onclick="perfPeriod='${p}';renderPerformanceSection('${athleteId}','${containerId}')">${periodLabel(p)}</div>`).join('')}
       </div>
       ${chart || `<div class="empty" style="padding:24px 0"><div class="empty-sub">Necesitás al menos 2 ${periodLabel(perfPeriod).toLowerCase()}s con registros para ver el gráfico — probá otro período o cargá más registros.</div></div>`}
       <div class="hr"></div>
-      ${perfDeltaHTML(points, perfPeriod)}
+      ${perfDeltaHTML(points, perfPeriod, perfMetric)}
     </div>
   `;
 }
@@ -1703,85 +1720,131 @@ function playerTab(tab){
   if(tab==='log') renderPlayerLogTab();
   else renderPlayerProgressTab();
 }
-// Self-service logging: the athlete picks any exercise from the catalog and logs their
-// own weight × reps whenever they want, without needing the coach to have built a
+// Self-service session logging: the athlete picks any exercise from the catalog
+// and logs every SET they did that day (peso × reps × RIR — reps en reserva,
+// cuántas más podrían haber hecho), without needing the coach to have built a
 // session for it first. Saved with source 'self' so the coach can tell it apart.
+// A set's RIR feeds into its RM estimate as "extra reps to failure" (see
+// effectiveReps), so a submaximal working set still gives an honest estimate.
+let plogSets = [];
+function resetPlogSets(){ plogSets = [{load:'',reps:'',rir:''}]; }
 function renderPlayerLogTab(){
+  resetPlogSets();
   const el = document.getElementById('player-tab-log');
   el.innerHTML = `
-    <div class="card" style="max-width:640px">
-      <div class="sec-title mb16">📝 Registrar mi entrenamiento</div>
-      <div class="small mb16">Elegí el ejercicio y cargá el peso y las repeticiones que hiciste — no hace falta que tu coach te arme la sesión primero.</div>
+    <div class="card" style="max-width:720px">
+      <div class="sec-title mb16">📝 Registrar mi sesión</div>
+      <div class="small mb16">Elegí el ejercicio de hoy y cargá cada serie que hiciste — no hace falta que tu coach te arme la sesión primero.</div>
       <div class="form-row c2 mb12">
         <div class="form-group">
           <label class="form-label">Ejercicio</label>
-          <select class="form-input form-select" id="plog-exercise" onchange="updatePlayerLogEstimate()"></select>
+          <select class="form-input form-select" id="plog-exercise" onchange="renderPlogSetsWrap()"></select>
         </div>
         <div class="form-group">
           <label class="form-label">Fecha</label>
           <input class="form-input" type="date" id="plog-date">
         </div>
       </div>
-      <div class="form-row c2 mb12">
-        <div class="form-group">
-          <label class="form-label" id="plog-weight-label">Peso levantado (kg)</label>
-          <input class="form-input" type="number" step="0.5" id="plog-weight" placeholder="100" oninput="updatePlayerLogEstimate()">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Repeticiones</label>
-          <input class="form-input" type="number" min="1" max="15" id="plog-reps" placeholder="5" oninput="updatePlayerLogEstimate()">
-        </div>
-      </div>
+      <div class="form-hint mb12">RIR = repeticiones en reserva: cuántas más podrías haber hecho antes de fallar (0 = fuiste al fallo). Dejalo vacío si no lo sabés.</div>
+      <div class="form-hint mb12" id="plog-unit-hint"></div>
+      <div id="plog-sets-wrap"></div>
+      <button class="btn btn-ghost btn-sm mb16" onclick="addPlogSetRow()">+ Agregar serie</button>
       <div class="form-group mb12">
         <label class="form-label">Nota (opcional)</label>
-        <input class="form-input" id="plog-note" placeholder="Cómo te sentiste, RPE, contexto…">
+        <input class="form-input" id="plog-note" placeholder="Cómo te sentiste, contexto…">
       </div>
       <div class="rm-result" id="plog-result">
         <div class="rm-result-num" id="plog-result-num">—</div>
-        <div class="rm-result-label">RM estimado</div>
+        <div class="rm-result-label">Mejor serie · RM estimado</div>
         <div class="rm-formula-note" id="plog-formula-note"></div>
       </div>
-      <div class="flex justify-between items-center" style="margin-top:16px">
-        <label class="small flex items-center gap8"><input type="checkbox" id="plog-set-current" checked> Usar como mi RM de referencia</label>
-        <button class="btn btn-primary" onclick="savePlayerLog()">💾 Guardar</button>
+      <div class="flex justify-between items-center" style="margin-top:16px;flex-wrap:wrap;gap:10px">
+        <label class="small flex items-center gap8"><input type="checkbox" id="plog-set-current" checked> Usar mi mejor serie como RM de referencia</label>
+        <button class="btn btn-primary" onclick="savePlayerLog()">💾 Guardar sesión</button>
       </div>
     </div>
   `;
   const sel = document.getElementById('plog-exercise');
   sel.innerHTML = (db.exercises||[]).map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('');
   document.getElementById('plog-date').value = todayISO();
-  updatePlayerLogEstimate();
+  renderPlogSetsWrap();
 }
-function updatePlayerLogEstimate(){
+function plogSetRowHTML(idx, row){
+  return `<div class="form-row" style="grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:4px;align-items:end">
+    <div class="form-group">${idx===0?'<label class="form-label" id="plog-weight-label">Peso (kg)</label>':''}<input class="form-input" type="number" step="0.5" value="${esc(row.load)}" placeholder="100" oninput="updatePlogRow(${idx},'load',this.value)"></div>
+    <div class="form-group">${idx===0?'<label class="form-label">Reps</label>':''}<input class="form-input" type="number" min="1" max="15" value="${esc(row.reps)}" placeholder="5" oninput="updatePlogRow(${idx},'reps',this.value)"></div>
+    <div class="form-group">${idx===0?'<label class="form-label">RIR</label>':''}<input class="form-input" type="number" min="0" max="5" step="0.5" value="${esc(row.rir)}" placeholder="2" oninput="updatePlogRow(${idx},'rir',this.value)"></div>
+    <button class="btn btn-ghost btn-sm" onclick="removePlogSetRow(${idx})" title="Quitar serie" ${plogSets.length<=1?'disabled':''}>✕</button>
+  </div>
+  <div class="small" id="plog-row-est-${idx}" style="margin:0 0 8px;color:var(--g3)">&nbsp;</div>`;
+}
+function renderPlogSetsWrap(){
+  document.getElementById('plog-sets-wrap').innerHTML = plogSets.map((row,idx)=>plogSetRowHTML(idx,row)).join('');
+  const ex = getExercise(document.getElementById('plog-exercise').value);
+  document.getElementById('plog-unit-hint').textContent = ex && ex.bodyweightRelative
+    ? 'El peso de cada serie es el lastre agregado (puede ser negativo si usás asistencia).' : '';
+  plogSets.forEach((_,idx)=>updatePlogRowEstimate(idx));
+  updatePlogSummary();
+}
+function addPlogSetRow(){ plogSets.push({load:'',reps:'',rir:''}); renderPlogSetsWrap(); }
+function removePlogSetRow(idx){ if(plogSets.length<=1) return; plogSets.splice(idx,1); renderPlogSetsWrap(); }
+function updatePlogRow(idx, field, val){
+  plogSets[idx][field] = val;
+  updatePlogRowEstimate(idx);
+  updatePlogSummary();
+}
+function updatePlogRowEstimate(idx){
+  const row = plogSets[idx]; const el = document.getElementById('plog-row-est-'+idx);
+  if(!row || !el) return;
   const ex = getExercise(document.getElementById('plog-exercise').value);
   const ath = getAthlete(playerAthleteId);
-  document.getElementById('plog-weight-label').textContent = ex && ex.bodyweightRelative ? 'Lastre agregado (kg)' : 'Peso levantado (kg)';
-  const w = Number(document.getElementById('plog-weight').value);
-  const r = Number(document.getElementById('plog-reps').value);
+  const w = Number(row.load), r = Number(row.reps);
+  if(!w || !r){ el.innerHTML = '&nbsp;'; return; }
+  const tl = totalLoad(ath, ex, w);
+  const est = estimate1RM(tl, effectiveReps(r, row.rir), db.settings.formula);
+  el.textContent = `≈ ${est.toFixed(1)} kg de RM${row.rir!==''&&row.rir!=null?' (con RIR '+row.rir+')':''}`;
+}
+function updatePlogSummary(){
+  const ex = getExercise(document.getElementById('plog-exercise').value);
+  const ath = getAthlete(playerAthleteId);
   const resNum = document.getElementById('plog-result-num');
   const resNote = document.getElementById('plog-formula-note');
-  if(!w || !r || r<1){ resNum.textContent = '—'; resNote.textContent=''; return; }
-  const tl = totalLoad(ath, ex, w);
-  const est = estimate1RM(tl, r, db.settings.formula);
-  resNum.textContent = est.toFixed(1)+' kg';
-  let extra = ex && ex.bodyweightRelative ? ` (peso corporal + lastre = ${tl.toFixed(1)} kg)` : '';
-  resNote.textContent = `Fórmula: ${formulaLabel(db.settings.formula)}${extra}${r>10?' · Con más de 10 reps la estimación pierde precisión':''}`;
+  let best = null, totalKg = 0, anyValid = false;
+  plogSets.forEach(row=>{
+    const w = Number(row.load), r = Number(row.reps);
+    if(!w || !r) return;
+    anyValid = true;
+    totalKg += w*r;
+    const tl = totalLoad(ath, ex, w);
+    const est = estimate1RM(tl, effectiveReps(r, row.rir), db.settings.formula);
+    if(best==null || est>best) best = est;
+  });
+  if(!anyValid){ resNum.textContent = '—'; resNote.textContent = ''; return; }
+  resNum.textContent = best.toFixed(1)+' kg';
+  resNote.textContent = `Fórmula: ${formulaLabel(db.settings.formula)} · Volumen total de la sesión: ${totalKg.toFixed(0)} kg`;
 }
 async function savePlayerLog(){
   const exId = document.getElementById('plog-exercise').value;
-  const w = Number(document.getElementById('plog-weight').value);
-  const r = Number(document.getElementById('plog-reps').value);
-  if(!w || !r){ toast('Ingresá peso y repeticiones', true); return; }
   const date = document.getElementById('plog-date').value || todayISO();
-  const note = document.getElementById('plog-note').value.trim();
+  const noteExtra = document.getElementById('plog-note').value.trim();
   const setCurrent = document.getElementById('plog-set-current').checked;
-  const rec = await addRecord(playerAthleteId, exId, date, w, r, note, 'self', setCurrent);
-  if(!rec) return;
-  toast('¡Guardado!');
-  document.getElementById('plog-weight').value = '';
-  document.getElementById('plog-reps').value = '';
-  document.getElementById('plog-note').value = '';
-  updatePlayerLogEstimate();
+  const ath = getAthlete(playerAthleteId), ex = getExercise(exId);
+  const valid = plogSets.filter(row=>Number(row.load) && Number(row.reps));
+  if(!valid.length){ toast('Cargá al menos una serie con peso y repeticiones', true); return; }
+  let bestIdx = -1, bestEst = -Infinity;
+  valid.forEach((row,i)=>{
+    const tl = totalLoad(ath, ex, Number(row.load));
+    const est = estimate1RM(tl, effectiveReps(row.reps, row.rir), db.settings.formula);
+    if(est>bestEst){ bestEst = est; bestIdx = i; }
+  });
+  for(let i=0;i<valid.length;i++){
+    const row = valid[i];
+    const note = [valid.length>1?`Serie ${i+1}/${valid.length}`:'', noteExtra].filter(Boolean).join(' · ');
+    const rec = await addRecord(playerAthleteId, exId, date, row.load, row.reps, note, 'self', setCurrent && i===bestIdx, row.rir);
+    if(!rec){ toast('Se guardó parte de la sesión — revisá tu conexión y completá lo que falte', true); return; }
+  }
+  toast(valid.length>1 ? `¡Sesión guardada! (${valid.length} series)` : '¡Guardado!');
+  renderPlayerLogTab();
 }
 function renderPlayerProgressTab(){
   document.getElementById('player-tab-progress').innerHTML = `
