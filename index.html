@@ -1611,6 +1611,7 @@ let playerAthleteId = null;
 let playerPin = '';
 let pendingPinAction = null; // {athleteId}
 let playerGateList = []; // [{id, firstName, lastName, sport, hasPin}] from player_list_athletes()
+const PLAYER_SESSION_KEY = 'cdc_player_session';
 
 async function enterPlayerMode(){
   appMode = 'player';
@@ -1621,13 +1622,35 @@ async function enterPlayerMode(){
   document.getElementById('player-home').style.display = 'none';
   document.getElementById('player-gate').style.display = 'flex';
   document.getElementById('player-gate-grid').innerHTML = `<div class="empty" style="grid-column:1/-1">Cargando…</div>`;
+
+  const directId = new URLSearchParams(window.location.search).get('a');
+  // Sin un link personal explícito, este dispositivo puede ya "recordar" a
+  // qué atleta pertenece (se guarda al loguearse — ver finishPlayerLogin), así
+  // que un alumno que ya entró una vez (incluido el que se dio de alta solo)
+  // vuelve directo a su perfil, sin elegir su nombre ni cargar el PIN de
+  // nuevo, cada vez que abra la app desde ESE mismo celular.
+  if(!directId){
+    let remembered = null;
+    try{ remembered = JSON.parse(localStorage.getItem(PLAYER_SESSION_KEY)||'null'); }catch(e){}
+    if(remembered && remembered.athleteId){
+      try{
+        await loadPlayerData(remembered.athleteId, remembered.pin||'');
+        playerPin = remembered.pin||'';
+        finishPlayerLogin(remembered.athleteId);
+        return;
+      }catch(e){
+        try{ localStorage.removeItem(PLAYER_SESSION_KEY); }catch(e2){}
+        // el PIN pudo cambiar o el atleta fue eliminado — sigue al flujo normal
+      }
+    }
+  }
+
   const {data, error} = await supa.rpc('player_list_athletes');
   playerGateList = error ? [] : (data||[]);
 
   // A personal link (?jugador&a=<id>, from "🔗 Link directo" in el perfil del
   // atleta) skips the "¿Quién sos?" roster entirely — el atleta nunca ve los
   // nombres de los demás, solo el suyo (con su PIN si tiene uno cargado).
-  const directId = new URLSearchParams(window.location.search).get('a');
   if(directId){
     const entry = playerGateList.find(a=>a.id===directId);
     if(entry){
@@ -1664,6 +1687,11 @@ function renderPlayerDirectEntry(entry){
   `;
 }
 function renderPlayerGate(){
+  // Mostrar el listado completo es siempre una señal de "no soy el que este
+  // dispositivo recuerda" (tocaron "Cambiar de jugador" o "¿No sos vos?") —
+  // se olvida la sesión guardada para no forzar a nadie a seguir siendo
+  // logueado como otra persona en este mismo celular.
+  try{ localStorage.removeItem(PLAYER_SESSION_KEY); }catch(e){}
   document.getElementById('player-home').style.display = 'none';
   document.getElementById('player-gate').style.display = 'flex';
   document.getElementById('player-gate-title').textContent = '¿Quién sos?';
@@ -1775,6 +1803,11 @@ async function confirmPin(){
 }
 function finishPlayerLogin(athleteId){
   playerAthleteId = athleteId;
+  // Este dispositivo "recuerda" a este atleta: la próxima vez que abra la
+  // app (aunque sea desde el link genérico ?jugador, o directo desde el
+  // ícono si la instaló) entra derecho a su perfil sin elegir su nombre
+  // ni volver a cargar el PIN — ver el chequeo en enterPlayerMode().
+  try{ localStorage.setItem(PLAYER_SESSION_KEY, JSON.stringify({athleteId, pin:playerPin})); }catch(e){}
   const a = getAthlete(athleteId);
   document.getElementById('player-gate').style.display = 'none';
   document.getElementById('player-home').style.display = 'block';
