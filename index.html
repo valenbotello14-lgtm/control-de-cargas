@@ -444,7 +444,10 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
       <div class="small">Tocá tu nombre para cargar tus datos y ver tu progreso</div>
     </div>
     <div class="g-auto" id="player-gate-grid" style="max-width:760px;width:100%"></div>
-    <div style="margin-top:34px">
+    <div style="margin-top:26px">
+      <button class="btn btn-primary btn-sm" onclick="openSelfRegisterModal()">+ Soy nuevo, quiero crear mi usuario</button>
+    </div>
+    <div style="margin-top:12px">
       <button class="btn btn-ghost btn-sm" onclick="exitToCoach()">🔒 Modo Coach</button>
     </div>
   </div>
@@ -484,6 +487,31 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
   <div class="modal-ft">
     <button class="btn btn-ghost" onclick="closeModal(null,'pin-modal')">Cancelar</button>
     <button class="btn btn-primary" onclick="confirmPin()">Ingresar</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ SELF-REGISTER MODAL (atleta se da de alta solo) ══ -->
+<div class="modal-overlay" id="self-register-modal" style="display:none" onclick="closeModal(event,'self-register-modal')">
+<div class="modal" onclick="event.stopPropagation()">
+  <div class="modal-hd"><div class="modal-title">Creá tu usuario</div><div class="modal-close" onclick="closeModal(null,'self-register-modal')">✕</div></div>
+  <div class="form-hint mb12">Con esto entrás directo, sin que tu coach tenga que cargarte antes. Si tenías un usuario armado por tu coach, mejor buscá tu nombre en la lista en vez de crear uno nuevo.</div>
+  <div class="form-row c2 mb12">
+    <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="sr-first" placeholder="Juan"></div>
+    <div class="form-group"><label class="form-label">Apellido *</label><input class="form-input" id="sr-last" placeholder="Pérez"></div>
+  </div>
+  <div class="form-row c2 mb12">
+    <div class="form-group"><label class="form-label">Peso corporal (kg)</label><input class="form-input" type="number" step="0.1" id="sr-bw" placeholder="78.0"></div>
+    <div class="form-group"><label class="form-label">Deporte</label><input class="form-input" id="sr-sport" placeholder="Rugby, fútbol…"></div>
+  </div>
+  <div class="form-group mb12" style="max-width:220px">
+    <label class="form-label">PIN (opcional, recomendado)</label>
+    <input class="form-input" type="text" inputmode="numeric" maxlength="8" id="sr-pin" placeholder="Ej: 1234">
+    <div class="form-hint">Si lo cargás, te lo va a pedir cada vez que entres — así nadie más puede tocar tu nombre y ver o cargar tus datos.</div>
+  </div>
+  <div class="modal-ft">
+    <button class="btn btn-ghost" onclick="closeModal(null,'self-register-modal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="submitSelfRegister()">Crear y entrar</button>
   </div>
 </div>
 </div>
@@ -1586,6 +1614,45 @@ async function attemptPlayerLogin(athleteId, pin){
   playerPin = pin;
   finishPlayerLogin(athleteId);
   return true;
+}
+function openSelfRegisterModal(){
+  document.getElementById('sr-first').value = '';
+  document.getElementById('sr-last').value = '';
+  document.getElementById('sr-bw').value = '';
+  document.getElementById('sr-sport').value = '';
+  document.getElementById('sr-pin').value = '';
+  document.getElementById('self-register-modal').style.display = 'flex';
+}
+// Lets an athlete create their own athlete row from the gate, without the
+// coach having to add them first — goes through the player_self_register
+// RPC (same PIN-checked/anon-safe pattern as the rest of Modo Jugador),
+// then logs them straight into their brand-new profile.
+async function submitSelfRegister(){
+  const first = document.getElementById('sr-first').value.trim();
+  const last = document.getElementById('sr-last').value.trim();
+  if(!first || !last){ toast('Nombre y apellido son obligatorios', true); return; }
+  const bodyweight = Number(document.getElementById('sr-bw').value) || 0;
+  const sport = document.getElementById('sr-sport').value.trim();
+  const pin = document.getElementById('sr-pin').value.trim();
+  const id = uid();
+  const {error} = await supa.rpc('player_self_register', {
+    p_id: id, p_first_name: first, p_last_name: last,
+    p_bodyweight: bodyweight, p_sport: sport, p_pin: pin
+  });
+  if(error){ toast('No se pudo crear tu usuario: '+(error.message||'probá de nuevo'), true); return; }
+  document.getElementById('self-register-modal').style.display = 'none';
+  toast('¡Cuenta creada!');
+  try{
+    await loadPlayerData(id, pin);
+    playerPin = pin;
+    finishPlayerLogin(id);
+  }catch(e){
+    // Ya se creó igual — si el login automático falla por lo que sea,
+    // al menos que aparezca en la lista para entrar tocando su nombre.
+    const {data} = await supa.rpc('player_list_athletes');
+    playerGateList = data || [];
+    renderPlayerGate();
+  }
 }
 // Returning to Modo Coach just re-checks for an existing Supabase Auth
 // session on this device — the coach's own browser stays logged in, while an

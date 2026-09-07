@@ -359,6 +359,54 @@ begin
 end;
 $$;
 
+-- player_self_register: permite que un atleta se dé de alta él mismo
+-- desde el link ?jugador, sin que el coach tenga que cargarlo antes a
+-- mano. Como no hay login, no hay forma de saber "a qué coach" se
+-- quiere sumar el atleta más que asumiendo que hay un solo coach en
+-- todo el proyecto de Supabase (que es como está pensada esta app hoy:
+-- un coach, muchos atletas). Si alguna vez se crea un segundo login de
+-- coach en este mismo proyecto, esta función deja de poder adivinar y
+-- hay que pasarle explícitamente a qué coach pertenece el atleta.
+create or replace function public.player_self_register(
+  p_id text,
+  p_first_name text,
+  p_last_name text,
+  p_bodyweight numeric,
+  p_sport text,
+  p_pin text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_coach uuid;
+  v_coach_count int;
+begin
+  select count(*) into v_coach_count from public.coach_settings;
+  if v_coach_count <> 1 then
+    raise exception 'self_register_unavailable';
+  end if;
+
+  select coach_id into v_coach from public.coach_settings limit 1;
+
+  if p_first_name is null or trim(p_first_name) = ''
+     or p_last_name is null or trim(p_last_name) = '' then
+    raise exception 'missing_name';
+  end if;
+
+  insert into public.athletes(
+    id, coach_id, first_name, last_name, bodyweight, sport, pin, notes, active
+  )
+  values (
+    p_id, v_coach, trim(p_first_name), trim(p_last_name),
+    nullif(p_bodyweight, 0), nullif(trim(p_sport), ''), nullif(trim(p_pin), ''),
+    'Alta autogestionada desde el link de jugador', true
+  );
+end;
+$$;
+
 -- ── Permisos: los atletas usan estas funciones sin haber iniciado
 --    sesión, así que el rol "anon" necesita poder ejecutarlas.
 grant usage
@@ -381,4 +429,8 @@ grant execute
 
 grant execute
   on function public.player_update_week_item(text, text, text, text, jsonb)
+  to anon, authenticated;
+
+grant execute
+  on function public.player_self_register(text, text, text, numeric, text, text)
   to anon, authenticated;

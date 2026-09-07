@@ -16,6 +16,7 @@ Los datos viven en la nube (**Supabase**), no en el navegador: el coach entra co
 - **Modo Jugador**: cada alumno entra desde **su propio celular** con el link `?jugador` (ver más abajo), sin login — solo toca su nombre (y un PIN opcional). Ahí puede:
   - **+ Registrar**: cargar cualquier ejercicio por su cuenta (peso × reps), cuando quiera, sin depender del coach,
   - ver **su progreso**: la evolución de su RM semana/mes/año y su historial peso × reps por ejercicio.
+- **Alta autogestionada**: si un alumno todavía no está cargado, puede tocar **"+ Soy nuevo, quiero crear mi usuario"** en el link `?jugador` y darse de alta él mismo (nombre, peso, deporte y un PIN opcional) — sin que el coach tenga que cargarlo antes desde su panel. Queda marcado con una nota ("Alta autogestionada…") para que el coach sepa cómo entró, y le aparece en Atletas apenas actualiza la página.
 - **Gestión de bajas**: dar de baja a un atleta que dejó de entrenar (reversible, no borra nada) o eliminarlo permanentemente.
 - **Ajustes**: fórmula de cálculo, cerrar sesión, y exportar/importar backup en JSON.
 
@@ -29,7 +30,9 @@ Los datos viven en la nube (**Supabase**), no en el navegador: el coach entra co
 Todo el backend vive en un proyecto de Supabase (gratis):
 
 - **Tablas** `athletes`, `exercises`, `records`, `coach_settings` — protegidas con Row Level Security: cada fila pertenece a un `coach_id` y solo ese coach autenticado puede leerla o escribirla. (El esquema también incluye `templates` y `weeks`, remanentes de la vieja Planificación por sesión — ya no se usan desde la app, quedaron sin tocar por si tenían datos.)
-- **Funciones RPC** `player_list_athletes`, `player_get_state`, `player_add_record` — corren con privilegios elevados (`security definer`) pero verifican el PIN del atleta del lado del servidor y solo exponen/tocan los datos de ESE atleta puntual. Así el Modo Jugador funciona sin que el atleta tenga una cuenta.
+- **Funciones RPC** `player_list_athletes`, `player_get_state`, `player_add_record`, `player_self_register` — corren con privilegios elevados (`security definer`) pero verifican el PIN del atleta del lado del servidor y solo exponen/tocan los datos de ESE atleta puntual. Así el Modo Jugador funciona sin que el atleta tenga una cuenta.
+  - `player_self_register` asume que hay **un solo coach** en el proyecto de Supabase (que es como está pensada esta app: vos sos el único coach) — no hay forma de que un visitante anónimo diga "a qué coach" quiere sumarse más que asumiéndolo. Si alguna vez creás un segundo login de coach en el mismo proyecto, esta función deja de poder adivinar y hay que tocarla para que reciba a qué coach pertenece.
+  - Como es una función anónima y pública, **cualquiera con el link `?jugador` puede crear un atleta** (no hay verificación de identidad tipo email). Es la contrapartida de que un alumno pueda darse de alta solo: si en algún momento aparecen altas falsas o spam, se borran desde Atletas → 🗑 Eliminar como cualquier otro atleta.
 - El esquema completo (tablas, RLS, funciones) está pensado para correrse una sola vez desde el SQL Editor de Supabase.
 - La URL del proyecto y la clave pública (`anon`/`publishable`) están embebidas en `index.html` — es el modelo normal de Supabase: la clave pública es segura de exponer porque RLS es lo que realmente protege los datos, no el secreto de la clave.
 
