@@ -341,7 +341,7 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
               <select class="form-input form-select" id="est-exercise" onchange="updateEstimate()"></select>
             </div>
           </div>
-          <div class="form-row c3 mb12">
+          <div class="form-row c4 mb12">
             <div class="form-group">
               <label class="form-label" id="est-weight-label">Peso levantado (kg)</label>
               <input class="form-input" type="number" step="0.5" id="est-weight" placeholder="100" oninput="updateEstimate()">
@@ -351,10 +351,15 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
               <input class="form-input" type="number" min="1" max="15" id="est-reps" placeholder="5" oninput="updateEstimate()">
             </div>
             <div class="form-group">
+              <label class="form-label">RIR (opcional)</label>
+              <input class="form-input" type="number" min="0" max="5" step="0.5" id="est-rir" placeholder="0" oninput="updateEstimate()">
+            </div>
+            <div class="form-group">
               <label class="form-label">Fecha</label>
               <input class="form-input" type="date" id="est-date">
             </div>
           </div>
+          <div class="form-hint mb12">RIR = repeticiones en reserva (cuántas más podría haber hecho antes de fallar). Dejalo vacío si la serie fue al fallo — el RM se estima igual que antes.</div>
           <div class="form-group mb12">
             <label class="form-label">Nota (opcional)</label>
             <input class="form-input" id="est-note" placeholder="Test inicial, RPE 9, sensaciones…">
@@ -1303,6 +1308,7 @@ function renderEstimatePanel(){
   document.getElementById('est-date').value = todayISO();
   document.getElementById('est-weight').value = '';
   document.getElementById('est-reps').value = '';
+  document.getElementById('est-rir').value = '';
   document.getElementById('est-note').value = '';
   updateEstimate();
 }
@@ -1314,14 +1320,16 @@ function updateEstimate(){
   weightLabel.textContent = ex && ex.bodyweightRelative ? 'Lastre agregado (kg)' : 'Peso levantado (kg)';
   const w = Number(document.getElementById('est-weight').value);
   const r = Number(document.getElementById('est-reps').value);
+  const rir = document.getElementById('est-rir').value;
   const resNum = document.getElementById('est-result-num');
   const resNote = document.getElementById('est-formula-note');
   if(!w || !r || r<1){ resNum.textContent = '—'; resNote.textContent=''; return; }
   const tl = totalLoad(ath, ex, w);
-  const est = estimate1RM(tl, r, db.settings.formula);
+  const est = estimate1RM(tl, effectiveReps(r, rir), db.settings.formula);
   resNum.textContent = est.toFixed(1)+' kg';
   let extra = ex && ex.bodyweightRelative ? ` (peso corporal + lastre = ${tl.toFixed(1)} kg)` : '';
-  resNote.textContent = `Fórmula: ${formulaLabel(db.settings.formula)}${extra}${r>10?' · Con más de 10 reps la estimación pierde precisión':''}`;
+  let rirNote = rir!=='' ? ` · con RIR ${rir} (se calcula como ${r}+${rir} reps al fallo)` : '';
+  resNote.textContent = `Fórmula: ${formulaLabel(db.settings.formula)}${extra}${rirNote}${r>10?' · Con más de 10 reps la estimación pierde precisión':''}`;
 }
 async function saveEstimate(){
   const athId = document.getElementById('est-athlete').value;
@@ -1330,14 +1338,16 @@ async function saveEstimate(){
   const w = Number(document.getElementById('est-weight').value);
   const r = Number(document.getElementById('est-reps').value);
   if(!w || !r){ toast('Ingresá peso y repeticiones', true); return; }
+  const rir = document.getElementById('est-rir').value;
   const date = document.getElementById('est-date').value || todayISO();
   const note = document.getElementById('est-note').value.trim();
   const setCurrent = document.getElementById('est-set-current').checked;
-  const rec = await addRecord(athId, exId, date, w, r, note, 'test', setCurrent);
+  const rec = await addRecord(athId, exId, date, w, r, note, 'test', setCurrent, rir);
   if(!rec) return;
   toast('Registro guardado');
   document.getElementById('est-weight').value='';
   document.getElementById('est-reps').value='';
+  document.getElementById('est-rir').value='';
   document.getElementById('est-note').value='';
   updateEstimate();
 }
