@@ -2063,6 +2063,23 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+// Respaldo al "orientation":"landscape" del manifest: en algunos navegadores
+// (sobre todo si la app corre en una pestaña normal y no instalada) el
+// manifest no alcanza a forzar la orientación inicial, así que la pedimos
+// también por JS. Falla silenciosamente donde no está soportado (p. ej. iOS
+// Safari, que ignora el lock de orientación) sin afectar el resto de la app.
+function lockLandscape(){
+  try{
+    const so = screen.orientation;
+    if(so && so.lock){
+      so.lock('landscape').catch(()=>{});
+    }
+  }catch(e){}
+}
+lockLandscape();
+window.addEventListener('load', lockLandscape);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) lockLandscape(); });
 </script>
 </body>
 </html>
