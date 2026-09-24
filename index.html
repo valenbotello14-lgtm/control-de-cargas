@@ -149,6 +149,49 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 .chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;background:var(--dk3);border:1px solid var(--bdr);font-size:11.5px;color:var(--g2);cursor:pointer}
 .chip.active{background:var(--aca);border-color:var(--ac);color:var(--ac)}
 
+/* ══ PANEL DE RENDIMIENTO (leaderboard + podio) ══════════════ */
+.hd-eyebrow{font-size:10.5px;font-weight:800;letter-spacing:1.2px;color:var(--ac);text-transform:uppercase}
+.hd-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.hd-updated{font-size:11px;color:var(--g3);white-space:nowrap}
+.two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+.lb-legend{padding:9px 14px;font-size:10.5px;color:var(--g3);background:var(--dk3);border:1px solid var(--bdr2);border-radius:var(--r8);margin-bottom:14px;display:flex;gap:16px;flex-wrap:wrap}
+.podium{display:grid;gap:14px;margin-bottom:16px;align-items:end}
+.pod-card{background:var(--dk3);border:1px solid var(--bdr);border-radius:var(--r12);padding:18px 12px;text-align:center;position:relative;cursor:pointer;transition:border-color .12s}
+.pod-card:hover{border-color:var(--ac)}
+.pod-card.gold{background:linear-gradient(160deg,var(--ac),var(--acd));border-color:var(--ac);transform:translateY(-14px);box-shadow:0 10px 30px rgba(47,111,235,.35)}
+.pod-rank{font-family:var(--fd);font-size:26px;font-weight:800;color:var(--g4);line-height:1}
+.pod-card.gold .pod-rank{color:rgba(255,255,255,.35)}
+.pod-avatar{width:46px;height:46px;border-radius:50%;background:var(--dk4);border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;margin:9px auto;color:var(--ac)}
+.pod-card.gold .pod-avatar{background:rgba(0,0,0,.25);border-color:rgba(255,255,255,.4);color:#fff}
+.pod-name{font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pod-sport{display:inline-block;margin-top:5px;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--dk4);color:var(--g2)}
+.pod-card.gold .pod-sport{background:rgba(255,255,255,.18);color:#fff}
+.pod-val{font-family:var(--fd);font-size:17px;font-weight:800;margin-top:8px}
+.pod-val small{font-size:10px;font-weight:600;color:var(--g3)}
+.pod-card.gold .pod-val small{color:rgba(255,255,255,.7)}
+.lb-row{display:grid;grid-template-columns:24px 30px 1fr auto 100px;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--bdr2);cursor:pointer}
+.lb-row:last-child{border-bottom:none}
+.lb-row:hover{background:var(--dk3)}
+.lb-rank{font-family:var(--fd);font-weight:800;color:var(--g3);font-size:13px;text-align:center}
+.lb-avatar{width:28px;height:28px;border-radius:50%;background:var(--dk4);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10.5px;color:var(--ac)}
+.lb-name-wrap{min-width:0}
+.lb-name{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-sport{font-size:10px;color:var(--g3)}
+.lb-val{font-weight:700;font-size:12.5px;text-align:right;white-space:nowrap}
+.lb-bar-track{height:6px;background:var(--dk4);border-radius:4px;overflow:hidden}
+.lb-bar-fill{height:100%;background:var(--ac);border-radius:4px}
+.li-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--bdr2);font-size:12px;cursor:pointer}
+.li-row:last-child{border-bottom:none}
+.li-name{font-weight:600}
+.li-meta{color:var(--g3);font-size:10.5px}
+.badge-up{background:var(--posa);color:var(--pos)}
+.cta-btn{display:block;width:100%;text-align:center;background:var(--ac);color:#fff;border:none;border-radius:var(--r12);padding:15px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 8px 24px rgba(47,111,235,.35)}
+@media(max-width:700px){
+  .two-col{grid-template-columns:1fr}
+  .lb-row{grid-template-columns:20px 28px 1fr auto}
+  .lb-row .lb-bar-track{display:none}
+}
+
 /* ══ ATHLETE CARD ════════════════════════════════════════════ */
 .ath-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r12);padding:16px;cursor:pointer;transition:border-color .12s,box-shadow .12s}
 .ath-card:hover{border-color:var(--ac);box-shadow:0 0 18px rgba(47,111,235,.18)}
@@ -265,7 +308,7 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
     </div>
     <div class="sb-nav">
       <div class="sb-sec-label">General</div>
-      <div class="sb-item active" data-panel="dashboard" onclick="nav('dashboard')"><span class="sb-item-icon">📊</span><span>Dashboard</span></div>
+      <div class="sb-item active" data-panel="dashboard" onclick="nav('dashboard')"><span class="sb-item-icon">📊</span><span>Panel</span></div>
       <div class="sb-item" data-panel="athletes" onclick="nav('athletes')"><span class="sb-item-icon">👤</span><span>Atletas</span></div>
       <div class="sb-sec-label">Fuerza</div>
       <div class="sb-item" data-panel="estimate" onclick="nav('estimate')"><span class="sb-item-icon">🎯</span><span>Estimar RM</span></div>
@@ -283,8 +326,8 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
     <div class="topbar">
       <button class="mobile-hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
       <div>
-        <div class="topbar-title" id="topbar-title">Dashboard</div>
-        <div class="topbar-sub" id="topbar-sub">Resumen general</div>
+        <div class="topbar-title" id="topbar-title">Panel</div>
+        <div class="topbar-sub" id="topbar-sub">Panel de rendimiento</div>
       </div>
       <div class="topbar-spacer"></div>
       <div class="coach-badge" id="coach-badge">👋 Coach</div>
@@ -294,17 +337,46 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 
       <!-- DASHBOARD -->
       <div class="panel active" id="panel-dashboard">
+        <div class="hd-row">
+          <div>
+            <div class="hd-eyebrow">Valen Botello Athletic Performance</div>
+            <div class="sec-title" style="font-size:24px">Panel de rendimiento</div>
+            <div class="small" style="margin-top:4px">Vista general de atletas, RM estimado y evolución de carga</div>
+          </div>
+          <div class="hd-updated" id="dash-updated"></div>
+        </div>
+
         <div class="g-auto mb20" id="dash-stats"></div>
+
+        <div class="card mb20">
+          <div class="sec-hd">
+            <div>
+              <div class="sec-title" style="font-size:15px">🏆 Leaderboard de fuerza</div>
+              <div class="small">Mejores marcas por atleta</div>
+            </div>
+          </div>
+          <div id="dash-lb-controls" class="mb12"></div>
+          <div id="dash-lb-legend"></div>
+          <div id="dash-lb-podium"></div>
+          <div id="dash-lb-list"></div>
+        </div>
+
+        <div class="two-col mb20">
+          <div class="card">
+            <div class="sec-title mb8" style="font-size:14px">📈 Quiénes más mejoraron</div>
+            <div class="small mb12">Mejor variación de RM en los últimos 30 días</div>
+            <div id="dash-improvers"></div>
+          </div>
+          <div class="card">
+            <div class="sec-title mb8" style="font-size:14px">🕐 Actividad reciente</div>
+            <div class="small mb12">Últimas sesiones cargadas</div>
+            <div id="dash-recent-list"></div>
+          </div>
+        </div>
+
         <div class="sec">
           <div class="sec-hd"><div class="sec-title">Atletas</div><button class="btn btn-ghost btn-sm" onclick="nav('athletes')">Ver todos →</button></div>
           <div class="g-auto" id="dash-athletes"></div>
-        </div>
-        <div class="sec">
-          <div class="sec-hd"><div class="sec-title">Últimas estimaciones de RM</div><button class="btn btn-ghost btn-sm" onclick="nav('history')">Ver historial →</button></div>
-          <div class="tbl-wrap"><table>
-            <thead><tr><th>Fecha</th><th>Atleta</th><th>Ejercicio</th><th>Peso × Reps</th><th>RM estimado</th><th></th></tr></thead>
-            <tbody id="dash-recent"></tbody>
-          </table></div>
         </div>
       </div>
 
@@ -850,7 +922,7 @@ async function addRecord(athleteId, exerciseId, date, load, reps, note, source, 
 let currentPanel = 'dashboard';
 let navData = {};
 const PANEL_META = {
-  dashboard:['Dashboard','Resumen general'],
+  dashboard:['Panel','Panel de rendimiento'],
   athletes:['Atletas','Gestión de atletas'],
   'athlete-profile':['Perfil del Atleta',''],
   estimate:['Estimar RM','Calculadora rápida de 1RM'],
@@ -922,32 +994,190 @@ function selectableAthletes(includeId){
   }
   return active;
 }
+// ── Leaderboard state (persists while navigating away and back) ──
+let dashLbMetric = 'rm';       // 'rm' | 'volume' | 'improve'
+let dashLbPeriod = 'all';      // 'all' | '30d'
+let dashLbSport = 'all';
+let dashLbExerciseId = null;
+
 function renderDashboard(){
   const aths = (db.athletes||[]).filter(isActiveAthlete);
-  const recs = (db.records||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const recs = db.records||[];
+  const weekCutoff = new Date(); weekCutoff.setDate(weekCutoff.getDate()-7);
+  const recentCount = recs.filter(r=>new Date(r.date+'T00:00:00')>=weekCutoff).length;
+
+  document.getElementById('dash-updated').textContent = '🕐 Actualizado ' + fmtDate(new Date().toISOString().slice(0,10));
   document.getElementById('dash-stats').innerHTML = `
     <div class="stat-card"><div class="stat-num">${aths.length}</div><div class="stat-label">Atletas activos</div></div>
     <div class="stat-card"><div class="stat-num">${(db.exercises||[]).length}</div><div class="stat-label">Ejercicios</div></div>
     <div class="stat-card featured"><div class="stat-num">${recs.length}</div><div class="stat-label">Registros de RM</div></div>
+    <div class="stat-card"><div class="stat-num">${recentCount}</div><div class="stat-label">Registros esta semana</div></div>
   `;
+
+  renderDashboardLeaderboard();
+  renderDashImprovers();
+  renderDashRecentList();
+
   const preview = aths.slice(0,6);
   document.getElementById('dash-athletes').innerHTML = preview.length
     ? preview.map(a=>athleteCardHTML(a)).join('')
     : `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👤</div><div class="empty-title">Sin atletas todavía</div><div class="empty-sub">Cargá tu primer atleta para empezar</div><button class="btn btn-primary" style="margin-top:14px" onclick="nav('athletes');openAthleteModal()">+ Nuevo Atleta</button></div>`;
+}
 
-  const recent = recs.slice(0,8);
-  document.getElementById('dash-recent').innerHTML = recent.length ? recent.map(r=>{
+// Distinct sports among active athletes, for the leaderboard's sport filter.
+function dashSports(){
+  const set = new Set();
+  (db.athletes||[]).filter(isActiveAthlete).forEach(a=>{ if(a.sport && a.sport.trim()) set.add(a.sport.trim()); });
+  return Array.from(set).sort((a,b)=>a.localeCompare(b));
+}
+function dashInitials(a){ return ((a.firstName||' ')[0]+(a.lastName||' ')[0]).toUpperCase(); }
+function metricValueLabel(metric, value){
+  if(metric==='improve') return (value>=0?'+':'')+value.toFixed(1)+'%';
+  return value.toFixed(1)+' kg';
+}
+// One athlete's leaderboard value for a given exercise/metric/period, or null
+// if they don't have enough data to rank (never 0 — that would rank them
+// artificially at the bottom instead of just leaving them out).
+function dashLeaderboardValue(athleteId, exerciseId, metric, period){
+  let recs = (db.records||[]).filter(r=>r.athleteId===athleteId && r.exerciseId===exerciseId);
+  if(period==='30d'){
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+    recs = recs.filter(r=>new Date(r.date+'T00:00:00')>=cutoff);
+  }
+  if(!recs.length) return null;
+  if(metric==='volume'){
+    const sum = recs.reduce((s,r)=>s+(Number(r.load)||0)*(Number(r.reps)||0),0);
+    return sum>0 ? sum : null;
+  }
+  if(metric==='improve'){
+    if(recs.length<2) return null;
+    const sorted = recs.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const first = recEstTotal(sorted[0]), last = recEstTotal(sorted[sorted.length-1]);
+    if(!first) return null;
+    return (last-first)/first*100;
+  }
+  // 'rm': the athlete's reference RM — the record flagged as current if it
+  // falls within the period, else the most recent one in range. Matches the
+  // same "current record" convention used everywhere else in the app
+  // (athlete cards, history, the "Referencia" badge) instead of picking
+  // whichever set happens to produce the highest formula estimate.
+  const flagged = recs.find(r=>r.current);
+  const rec = flagged || recs.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+  return recEstTotal(rec);
+}
+function computeLeaderboard(exerciseId, metric, period, sport){
+  const aths = (db.athletes||[]).filter(isActiveAthlete).filter(a=>sport==='all' || (a.sport||'').trim()===sport);
+  return aths.map(a=>({athlete:a, value: dashLeaderboardValue(a.id, exerciseId, metric, period)}))
+    .filter(r=>r.value!=null && !isNaN(r.value))
+    .sort((a,b)=>b.value-a.value);
+}
+function renderDashboardLeaderboard(){
+  const exs = db.exercises||[];
+  if(!exs.length){
+    document.getElementById('dash-lb-controls').innerHTML = '';
+    document.getElementById('dash-lb-legend').innerHTML = '';
+    document.getElementById('dash-lb-podium').innerHTML = '';
+    document.getElementById('dash-lb-list').innerHTML = `<div class="empty" style="padding:20px 0"><div class="empty-sub">Cargá al menos un ejercicio para ver el leaderboard.</div></div>`;
+    return;
+  }
+  if(!dashLbExerciseId || !exs.find(e=>e.id===dashLbExerciseId)) dashLbExerciseId = exs[0].id;
+  const sports = dashSports();
+  const metricChips = [['rm','🎯 RM estimado'],['volume','📈 Volumen'],['improve','⚡ Mejora %']]
+    .map(([m,label])=>`<div class="chip ${dashLbMetric===m?'active':''}" onclick="dashLbMetric='${m}';renderDashboardLeaderboard()">${label}</div>`).join('');
+  const periodChips = [['all','Histórico'],['30d','30 días']]
+    .map(([p,label])=>`<div class="chip ${dashLbPeriod===p?'active':''}" onclick="dashLbPeriod='${p}';renderDashboardLeaderboard()">${label}</div>`).join('');
+  const sportChips = sports.length ? ['all',...sports].map(s=>`<div class="chip ${dashLbSport===s?'active':''}" onclick="dashLbSport='${esc(s).replace(/'/g,"\\'")}';renderDashboardLeaderboard()">${s==='all'?'Todos':esc(s)}</div>`).join('') : '';
+  const exChips = exs.map(e=>`<div class="chip ${dashLbExerciseId===e.id?'active':''}" onclick="dashLbExerciseId='${e.id}';renderDashboardLeaderboard()">${esc(e.name)}</div>`).join('');
+  document.getElementById('dash-lb-controls').innerHTML = `
+    <div class="toolbar mb12">${metricChips}</div>
+    <div class="toolbar mb12">${periodChips}${sportChips}</div>
+    <div class="toolbar mb12">${exChips}</div>
+  `;
+
+  const rows = computeLeaderboard(dashLbExerciseId, dashLbMetric, dashLbPeriod, dashLbSport);
+  const ex = getExercise(dashLbExerciseId);
+  const metricName = dashLbMetric==='rm' ? 'RM estimado' : dashLbMetric==='volume' ? 'Volumen total' : 'Mejora de RM';
+  document.getElementById('dash-lb-legend').innerHTML = `<div class="lb-legend">
+    <span>${dashLbMetric==='improve'?'⚡':'🎯'} <b>${esc(metricName)}</b> · ${esc(ex?ex.name:'')} · Mayor valor = mejor</span>
+    ${rows.length?'<span>barra = qué tan cerca del líder</span>':''}
+  </div>`;
+
+  if(!rows.length){
+    document.getElementById('dash-lb-podium').innerHTML = '';
+    document.getElementById('dash-lb-list').innerHTML = `<div class="empty" style="padding:20px 0"><div class="empty-sub">Todavía no hay registros de ${esc(ex?ex.name:'este ejercicio')}${dashLbSport!=='all'?' para '+esc(dashLbSport):''} para armar el leaderboard.</div></div>`;
+    return;
+  }
+
+  const top3 = rows.slice(0,3);
+  const podOrder = top3.length===3 ? [top3[1],top3[0],top3[2]] : top3.length===2 ? [top3[1],top3[0]] : [top3[0]];
+  document.getElementById('dash-lb-podium').innerHTML = `<div class="podium" style="grid-template-columns:repeat(${podOrder.length},1fr)">
+    ${podOrder.map(r=>{
+      const rank = rows.indexOf(r)+1;
+      return `<div class="pod-card ${rank===1?'gold':''}" onclick="viewAthlete('${r.athlete.id}')">
+        <span class="pod-rank">${rank}</span>
+        <div class="pod-avatar">${dashInitials(r.athlete)}</div>
+        <div class="pod-name">${esc(athleteName(r.athlete))}</div>
+        ${r.athlete.sport?`<div class="pod-sport">${esc(r.athlete.sport)}</div>`:''}
+        <div class="pod-val">${metricValueLabel(dashLbMetric, r.value)}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  const rest = rows.slice(3,10);
+  const topVal = rows[0].value || 1;
+  document.getElementById('dash-lb-list').innerHTML = rest.map((r,i)=>{
+    const pct = Math.max(0, Math.min(100, (r.value/topVal)*100));
+    return `<div class="lb-row" onclick="viewAthlete('${r.athlete.id}')">
+      <div class="lb-rank">${i+4}</div>
+      <div class="lb-avatar">${dashInitials(r.athlete)}</div>
+      <div class="lb-name-wrap"><div class="lb-name">${esc(athleteName(r.athlete))}</div>${r.athlete.sport?`<div class="lb-sport">${esc(r.athlete.sport)}</div>`:''}</div>
+      <div class="lb-val">${metricValueLabel(dashLbMetric, r.value)}</div>
+      <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${pct.toFixed(0)}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// Each active athlete's single best % RM improvement (across any exercise)
+// in the last 30 days — a quick "who's on the up" highlight, independent of
+// whichever exercise is selected in the leaderboard above.
+function computeTopImprovers(limit){
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+  const out = [];
+  (db.athletes||[]).filter(isActiveAthlete).forEach(a=>{
+    let best = null;
+    (db.exercises||[]).forEach(ex=>{
+      const recs = (db.records||[]).filter(r=>r.athleteId===a.id && r.exerciseId===ex.id && new Date(r.date+'T00:00:00')>=cutoff).sort((x,y)=>new Date(x.date)-new Date(y.date));
+      if(recs.length<2) return;
+      const first = recEstTotal(recs[0]), last = recEstTotal(recs[recs.length-1]);
+      if(!first) return;
+      const pct = (last-first)/first*100;
+      if(!best || pct>best.pct) best = {exercise:ex, pct};
+    });
+    if(best) out.push({athlete:a, exercise:best.exercise, pct:best.pct});
+  });
+  out.sort((a,b)=>b.pct-a.pct);
+  return out.slice(0, limit);
+}
+function renderDashImprovers(){
+  const rows = computeTopImprovers(4);
+  document.getElementById('dash-improvers').innerHTML = rows.length ? rows.map(r=>{
+    const up = r.pct>=0;
+    return `<div class="li-row" onclick="viewAthlete('${r.athlete.id}')">
+      <div><div class="li-name">${esc(athleteName(r.athlete))}</div><div class="li-meta">${esc(r.exercise.name)}</div></div>
+      <span class="badge ${up?'badge-up':'badge-gr'}">${up?'▲':'▼'} ${up?'+':''}${r.pct.toFixed(1)}%</span>
+    </div>`;
+  }).join('') : `<div class="empty" style="padding:14px 0"><div class="empty-sub">Necesitás al menos 2 registros de un mismo ejercicio en los últimos 30 días para ver mejoras acá.</div></div>`;
+}
+function renderDashRecentList(){
+  const recs = (db.records||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6);
+  document.getElementById('dash-recent-list').innerHTML = recs.length ? recs.map(r=>{
     const a=getAthlete(r.athleteId), ex=getExercise(r.exerciseId);
     const est = recEstTotal(r);
-    return `<tr>
-      <td>${fmtDate(r.date)}</td>
-      <td style="cursor:pointer;color:var(--ac)" onclick="viewAthlete('${r.athleteId}')">${esc(athleteName(a))}</td>
-      <td>${esc(ex?ex.name:'—')}</td>
-      <td>${r.load} kg × ${r.reps}</td>
-      <td><b>${est?est.toFixed(1):'—'} kg</b></td>
-      <td>${r.current?'<span class="badge badge-ac">Referencia</span>':''}</td>
-    </tr>`;
-  }).join('') : `<tr><td colspan="6" class="empty">Todavía no hay registros de RM.</td></tr>`;
+    return `<div class="li-row" onclick="viewAthlete('${r.athleteId}')">
+      <div><div class="li-name">${esc(athleteName(a))}</div><div class="li-meta">${esc(ex?ex.name:'—')} · ${fmtDate(r.date)}</div></div>
+      <span class="lb-val">${est?est.toFixed(1)+' kg':'—'}</span>
+    </div>`;
+  }).join('') : `<div class="empty" style="padding:14px 0"><div class="empty-sub">Todavía no hay registros de RM.</div></div>`;
 }
 
 function athleteCardHTML(a, manage){
@@ -1960,14 +2190,52 @@ async function savePlayerLog(){
   toast(valid.length>1 ? `¡Sesión guardada! (${valid.length} series)` : '¡Guardado!');
   renderPlayerLogTab();
 }
+// Athlete's own stats for the last 30 days: their most recently trained
+// exercise's current RM, how many days they logged something, and total kg
+// moved. Only ever their own records — never another athlete's.
+function computePlayerStats(athleteId){
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+  const recs = (db.records||[]).filter(r=>r.athleteId===athleteId);
+  const recent = recs.filter(r=>new Date(r.date+'T00:00:00')>=cutoff);
+  const sessionDates = new Set(recent.map(r=>r.date));
+  const volume30 = recent.reduce((s,r)=>s+(Number(r.load)||0)*(Number(r.reps)||0),0);
+  let bestEst = null, bestExName = null;
+  if(recs.length){
+    const lastRec = recs.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+    const ex = getExercise(lastRec.exerciseId);
+    const cur = getCurrentRecord(athleteId, lastRec.exerciseId);
+    bestEst = recEstTotal(cur || lastRec);
+    bestExName = ex ? ex.name : null;
+  }
+  return {sessions: sessionDates.size, volume30, bestEst, bestExName};
+}
 function renderPlayerProgressTab(){
+  const ath = getAthlete(playerAthleteId);
+  const stats = computePlayerStats(playerAthleteId);
   document.getElementById('player-tab-progress').innerHTML = `
-    <div class="sec-title mb12">Evolución de Rendimiento</div>
-    <div class="small mb16">Mirá si venís mejorando o bajando tu RM estimado, agrupado por semana, mes o año.</div>
-    <div id="player-perf-section" class="mb20"></div>
-    <div class="sec-title mb12">Progresión por Ejercicio</div>
-    <div class="small mb16">Cómo fue evolucionando tu peso × repeticiones en cada ejercicio, sesión a sesión.</div>
-    ${buildProgressionSectionsHTML(playerAthleteId, false)}
+    <div class="hd-row">
+      <div>
+        <div class="hd-eyebrow">Hola, ${esc((ath&&ath.firstName)||'')} 👋</div>
+        <div class="sec-title" style="font-size:20px">Así viene tu progreso</div>
+        <div class="small" style="margin-top:4px">Últimos 30 días</div>
+      </div>
+    </div>
+    <div class="g-auto mb20">
+      <div class="stat-card"><div class="stat-num">${stats.bestEst?stats.bestEst.toFixed(1):'—'}</div><div class="stat-label">${stats.bestExName?esc(stats.bestExName):'RM actual'} (kg)</div></div>
+      <div class="stat-card"><div class="stat-num">${stats.sessions}</div><div class="stat-label">Sesiones (30 días)</div></div>
+      <div class="stat-card featured"><div class="stat-num">${stats.volume30.toLocaleString('es-AR')}</div><div class="stat-label">Volumen (kg, 30 días)</div></div>
+    </div>
+    <div class="card mb16">
+      <div class="sec-title mb8" style="font-size:14px">📈 Evolución</div>
+      <div class="small mb12">Mirá si venís mejorando o bajando tu RM estimado o tu volumen, agrupado por semana, mes o año.</div>
+      <div id="player-perf-section"></div>
+    </div>
+    <div class="card mb16">
+      <div class="sec-title mb8" style="font-size:14px">🕐 Progresión por ejercicio</div>
+      <div class="small mb12">Cómo fue evolucionando tu peso × repeticiones en cada ejercicio, sesión a sesión.</div>
+      ${buildProgressionSectionsHTML(playerAthleteId, false)}
+    </div>
+    <button class="cta-btn" onclick="playerTab('log')">+ Registrar sesión de hoy</button>
   `;
   renderPerformanceSection(playerAthleteId, 'player-perf-section');
 }

@@ -7,6 +7,7 @@ Los datos viven en la nube (**Supabase**), no en el navegador: el coach entra co
 ## Qué hace
 
 - **Login del coach**: acceso con email/contraseña (Supabase Auth). Cada coach ve únicamente sus propios atletas.
+- **Panel de rendimiento**: al entrar, el coach ve un **leaderboard de fuerza** con podio (1°, 2°, 3°) de sus atletas — elegible por **RM estimado, Volumen o Mejora %**, filtrable por ejercicio, deporte y período (histórico / últimos 30 días) — más un bloque de **"Quiénes más mejoraron"** (mejor variación de RM en 30 días) y la **actividad reciente** de todo el equipo.
 - **Atletas**: alta de cada alumno (nombre y apellido) con peso corporal, deporte y próximo partido.
 - **Ejercicios**: catálogo con Sentadilla trasera, Sentadilla al cajón, Peso muerto (Despegue), Banco plano y Dominadas lastradas — más los que quieras agregar. Las dominadas se tratan como carga **relativa al peso corporal** (lastre agregado, puede ser negativo si se usa asistencia).
 - **Estimar RM**: cargás peso × repeticiones (y opcionalmente RIR) de un test y calcula el 1RM estimado (fórmulas Epley, Brzycki, Lombardi o promedio, configurable en Ajustes). Si cargás RIR, la estimación se ajusta con esas repeticiones "de más" al fallo — la misma lógica que usa el registro de sesión del alumno — así una serie submáxima da un número más realista en vez de subestimar el RM.
@@ -16,7 +17,7 @@ Los datos viven en la nube (**Supabase**), no en el navegador: el coach entra co
 - **Historial**: todos los registros de RM por atleta/ejercicio (tests y autogestión) con gráfico de progresión.
 - **Modo Jugador**: cada alumno entra desde **su propio celular** con el link `?jugador` (ver más abajo), sin login — solo toca su nombre (y un PIN opcional). Ahí puede:
   - **+ Registrar**: cargar su sesión del día (una o más series con peso/reps/RIR), cuando quiera, sin depender del coach,
-  - ver **su progreso**: la evolución de su RM o de su volumen semana/mes/año, y su historial peso × reps por ejercicio.
+  - ver **Mi Progreso**: su RM actual, sesiones y volumen de los últimos 30 días de un vistazo, la evolución de su RM o de su volumen semana/mes/año, y su historial peso × reps por ejercicio — siempre solo lo suyo, nunca el de otros alumnos.
 - **Alta autogestionada**: si un alumno todavía no está cargado, puede tocar **"+ Soy nuevo, quiero crear mi usuario"** en el link `?jugador` y darse de alta él mismo (nombre, peso, deporte y un PIN opcional) — sin que el coach tenga que cargarlo antes desde su panel. Queda marcado con una nota ("Alta autogestionada…") para que el coach sepa cómo entró, y le aparece en Atletas apenas actualiza la página.
 - **Gestión de bajas**: dar de baja a un atleta que dejó de entrenar (reversible, no borra nada) o eliminarlo permanentemente.
 - **Ajustes**: fórmula de cálculo, cerrar sesión, y exportar/importar backup en JSON.
