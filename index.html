@@ -34,7 +34,7 @@
   --dk:#08090B;--dk2:#0B0D10;--dk3:#121519;--dk4:#1A1E24;
   --card:#101317;--bdr:#20252C;--bdr2:#1A1F25;
   --w:#FFFFFF;--g0:#F4F6F9;--g1:#DCE3EE;--g2:#98A4B8;--g3:#5C6779;--g4:#2C3441;
-  --bl:#0EA5E9;--pu:#8B5CF6;--re:#EF4444;--ye:#F59E0B;--cy:#0EA5E9;
+  --bl:#0EA5E9;--pu:#8B5CF6;--re:#EF4444;--ye:#F59E0B;--yea:rgba(245,158,11,.14);--cy:#0EA5E9;
   --glow:0 0 20px rgba(47,111,235,.4);
   --fd:'Arial Narrow',-apple-system,'Segoe UI',system-ui,Roboto,sans-serif;
   --fb:-apple-system,'Segoe UI',system-ui,Roboto,Arial,sans-serif;
@@ -186,6 +186,25 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
 .li-meta{color:var(--g3);font-size:10.5px}
 .badge-up{background:var(--posa);color:var(--pos)}
 .cta-btn{display:block;width:100%;text-align:center;background:var(--ac);color:#fff;border:none;border-radius:var(--r12);padding:15px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 8px 24px rgba(47,111,235,.35)}
+/* Personal-best hint under the Evolución chart — never shown while trending
+   down (see perfPersonalBestHintHTML), so this never reads as a rebuke. */
+.pb-hint{margin-top:10px;padding:9px 12px;background:var(--dk3);border:1px solid var(--bdr2);border-radius:var(--r8);font-size:11.5px;color:var(--g1);text-align:center}
+.pb-hint.gold{background:var(--yea);border-color:var(--ye);color:#FFD79A}
+/* Progresión por ejercicio, player-facing card style (coach keeps the table) */
+.prog-card-group{margin-bottom:4px}
+.prog-card-group-title{font-size:11.5px;font-weight:700;color:var(--g2);padding:12px 2px 6px}
+.prog-card-row{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--bdr2)}
+.prog-card-row:last-child{border-bottom:none}
+.prog-card-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.prog-card-icon.up{background:var(--posa);color:var(--pos)}
+.prog-card-icon.down{background:var(--yea);color:var(--ye)}
+.prog-card-icon.flat{background:var(--dk4);color:var(--g2)}
+.prog-card-body{flex:1;min-width:0}
+.prog-card-period{font-size:10.5px;color:var(--g3)}
+.prog-card-val{font-weight:700;font-size:13px}
+.prog-card-delta{font-size:11px;font-weight:700;white-space:nowrap}
+.prog-card-delta.up{color:var(--pos)}
+.prog-card-delta.down{color:var(--ye)}
 @media(max-width:700px){
   .two-col{grid-template-columns:1fr}
   .lb-row{grid-template-columns:20px 28px 1fr auto}
@@ -1446,6 +1465,49 @@ function buildProgressionSectionsHTML(athleteId, editable){
     </div>`;
   }).join('');
 }
+// Player-facing "Progresión por ejercicio": same underlying history as the
+// coach's table above, but as a scannable list of ▲/▼/● rows (icon + delta
+// vs. the previous session) instead of a table — easier to read at a glance
+// than a table full of columns the athlete doesn't need to act on (Origen,
+// Nota, editar). The coach keeps the full table since they DO need those.
+function buildProgressionCardsHTML(athleteId){
+  const a = getAthlete(athleteId);
+  if(!a) return '';
+  const groups = (db.exercises||[]).map(ex=>{
+    const recs = (db.records||[]).filter(r=>r.athleteId===athleteId && r.exerciseId===ex.id).sort((x,y)=>new Date(x.date)-new Date(y.date));
+    if(!recs.length) return '';
+    // Compute deltas forward first (oldest→newest, "vs. previous session"),
+    // then render the list newest-first.
+    let prevEst = null;
+    const withDeltas = [];
+    recs.forEach(r=>{
+      const est = recEstTotal(r);
+      let delta = prevEst!=null ? est-prevEst : null;
+      withDeltas.push({r, est, delta});
+      prevEst = est;
+    });
+    const rowsHTML = withDeltas.slice().reverse().map(({r,est,delta})=>{
+      let icon='flat', deltaClass='', deltaTxt='—';
+      if(delta!=null){
+        if(Math.abs(delta)>=0.05){ icon = delta>0?'up':'down'; deltaClass = icon; deltaTxt = (delta>0?'+':'')+delta.toFixed(1)+' kg'; }
+        else { deltaTxt = '= igual'; }
+      }
+      return `<div class="prog-card-row">
+        <div class="prog-card-icon ${icon}">${icon==='up'?'▲':icon==='down'?'▼':'●'}</div>
+        <div class="prog-card-body">
+          <div class="prog-card-period">${fmtDate(r.date)}${r.rir!=null?` · RIR ${r.rir}`:''}</div>
+          <div class="prog-card-val">${r.load} kg × ${r.reps} <span class="small">(${est.toFixed(1)} kg)</span></div>
+        </div>
+        <div class="prog-card-delta ${deltaClass}" ${!deltaClass?'style="color:var(--g3)"':''}>${esc(deltaTxt)}</div>
+      </div>`;
+    }).join('');
+    return `<div class="prog-card-group">
+      <div class="prog-card-group-title">${esc(ex.name)}</div>
+      ${rowsHTML}
+    </div>`;
+  }).filter(Boolean).join('');
+  return groups || `<div class="empty" style="padding:20px 0"><div class="empty-sub">Todavía no hay registros para mostrar acá.</div></div>`;
+}
 function sourceBadge(source){
   if(source==='session') return '<span class="badge badge-bl">Sesión</span>';
   if(source==='daily-check') return '<span class="badge badge-ye">Chequeo del día</span>';
@@ -1596,6 +1658,7 @@ let perfMetric = 'rm'; // 'rm' (RM estimado) | 'volume' (kg totales levantados)
 function metricLabel(m){ return m==='volume' ? 'Volumen (kg)' : 'RM estimado'; }
 
 function periodLabel(p){ return {week:'Semana', month:'Mes', year:'Año'}[p]||'Mes'; }
+function periodThisLabel(p){ return {week:'esta semana', month:'este mes', year:'este año'}[p]||'este mes'; }
 const MONTH_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 function periodKey(dateISO, period){
   const d = new Date(dateISO+'T00:00:00');
@@ -1633,6 +1696,18 @@ function buildPerfPoints(athleteId, exerciseId, period, metric){
     .map(([key,b])=>({key, date:b.lastDate, val: metric==='volume' ? b.sum : b.sum/b.n}))
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
 }
+// Shared trend classifier for a points[] series — 'up' | 'down' | 'flat', or
+// null when there aren't at least 2 periods to compare. Same 0.5% "estable"
+// threshold used everywhere a trend is shown, so the chart color, the
+// headline badge and the detailed sentence never disagree with each other.
+function perfTrend(points){
+  if(points.length<2) return null;
+  const first = points[0].val, last = points[points.length-1].val;
+  const delta = last-first;
+  const pct = first ? (delta/first)*100 : 0;
+  const dir = Math.abs(pct)<0.5 ? 'flat' : (delta>0 ? 'up' : 'down');
+  return {first, last, delta, pct, dir};
+}
 function perfChartSVG(points, period){
   if(points.length<2) return '';
   const w=640,h=160,pad=32;
@@ -1645,14 +1720,22 @@ function perfChartSVG(points, period){
     const y = h-pad - ((p.val-min)/range)*(h-pad*2);
     return [x,y];
   });
-  const up = points[points.length-1].val >= points[0].val;
-  const color = up ? '#22C55E' : '#F59E0B';
+  const color = perfTrend(points).dir==='down' ? '#F59E0B' : '#22C55E';
   const path = coords.map((c,i)=>(i===0?'M':'L')+c[0].toFixed(1)+','+c[1].toFixed(1)).join(' ');
-  const dots = coords.map((c,i)=>`<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="4" fill="${color}"><title>${esc(periodBucketLabel(points[i].key,period))}: ${points[i].val.toFixed(1)} kg</title></circle>`).join('');
+  const lastIdx = points.length-1;
+  const dots = coords.map((c,i)=>{
+    if(i===lastIdx){
+      // Last point stands out (bigger dot + its value pinned above it) so
+      // the current number reads at a glance instead of needing a hover —
+      // the rest are still there for hover/tap detail, just smaller.
+      const labelY = Math.max(12, c[1]-12);
+      return `<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="6" fill="${color}" stroke="#08090B" stroke-width="2"><title>${esc(periodBucketLabel(points[i].key,period))}: ${points[i].val.toFixed(1)} kg</title></circle>
+        <text x="${c[0].toFixed(1)}" y="${labelY}" font-size="13" font-weight="700" fill="#fff" text-anchor="${i===0?'start':'end'}">${points[i].val.toFixed(1)} kg</text>`;
+    }
+    return `<circle cx="${c[0].toFixed(1)}" cy="${c[1].toFixed(1)}" r="4" fill="${color}" opacity=".55"><title>${esc(periodBucketLabel(points[i].key,period))}: ${points[i].val.toFixed(1)} kg</title></circle>`;
+  }).join('');
   const labels = points.map((p,i)=> (i===0||i===points.length-1||points.length<=6) ? `<text x="${coords[i][0].toFixed(1)}" y="${h-8}" font-size="9" fill="#5C6779" text-anchor="middle">${esc(periodBucketLabel(p.key,period))}</text>` : '').join('');
   return `<svg class="sparkline" viewBox="0 0 ${w} ${h}" width="100%" height="160" preserveAspectRatio="none">
-    <text x="${pad}" y="16" font-size="10" fill="#98A4B8">Máx: ${max.toFixed(1)} kg</text>
-    <text x="${w-pad}" y="16" font-size="10" fill="#98A4B8" text-anchor="end">Mín: ${min.toFixed(1)} kg</text>
     <path d="${path}" fill="none" stroke="${color}" stroke-width="2.5"/>
     ${dots}${labels}
   </svg>`;
@@ -1661,13 +1744,55 @@ function perfDeltaHTML(points, period, metric){
   const what = metric==='volume' ? 'volumen total' : 'RM estimado';
   if(!points.length) return `<div class="small">Todavía no hay registros para este ejercicio.</div>`;
   if(points.length<2) return `<div class="small">Con un solo período (${periodLabel(period).toLowerCase()}) todavía no se puede ver una tendencia de ${what} — seguí registrando.</div>`;
-  const first = points[0].val, last = points[points.length-1].val;
-  const delta = last-first;
-  const pct = first ? (delta/first)*100 : 0;
-  if(Math.abs(pct)<0.5) return `<div class="small">${esc(what[0].toUpperCase()+what.slice(1))} se mantuvo estable en <b>${last.toFixed(1)} kg</b> desde ${fmtDate(points[0].date)}.</div>`;
-  return delta>0
-    ? `<div><span style="color:var(--pos);font-weight:700">▲ Mejoró ${pct.toFixed(1)}%</span> <span class="small">— ${what}: de ${first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`
-    : `<div><span style="color:var(--ye);font-weight:700">▼ Bajó ${Math.abs(pct).toFixed(1)}%</span> <span class="small">— ${what}: de ${first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`;
+  const t = perfTrend(points);
+  if(t.dir==='flat') return `<div class="small">${esc(what[0].toUpperCase()+what.slice(1))} se mantuvo estable en <b>${t.last.toFixed(1)} kg</b> desde ${fmtDate(points[0].date)}.</div>`;
+  return t.dir==='up'
+    ? `<div><span style="color:var(--pos);font-weight:700">▲ Mejoró ${t.pct.toFixed(1)}%</span> <span class="small">— ${what}: de ${t.first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${t.last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`
+    : `<div><span style="color:var(--ye);font-weight:700">▼ Bajó ${Math.abs(t.pct).toFixed(1)}%</span> <span class="small">— ${what}: de ${t.first.toFixed(1)} kg (${fmtDate(points[0].date)}) a ${t.last.toFixed(1)} kg (${fmtDate(points[points.length-1].date)})</span></div>`;
+}
+// Big number + trend badge shown right above the chart — the quick read,
+// vs. perfDeltaHTML's full sentence below the chart for anyone who wants
+// the exact before/after dates too.
+function perfHeadlineHTML(points, period){
+  if(!points.length) return '';
+  const current = points[points.length-1].val;
+  const t = perfTrend(points);
+  let badge = '';
+  if(t){
+    if(t.dir==='up') badge = `<span class="badge badge-up">▲ +${t.pct.toFixed(1)}% ${periodThisLabel(period)}</span>`;
+    else if(t.dir==='down') badge = `<span class="badge badge-ye">▼ ${Math.abs(t.pct).toFixed(1)}% ${periodThisLabel(period)}</span>`;
+    else badge = `<span class="badge badge-gr">Estable</span>`;
+  }
+  return `<div class="flex items-center gap8 flex-wrap mb10">
+    <div style="font-family:var(--fd);font-size:24px;font-weight:800">${current.toFixed(1)} kg</div>
+    ${badge}
+  </div>`;
+}
+// The athlete's all-time best RM estimate for this exercise, across every
+// record ever loaded (not scoped to the selected period/metric).
+function personalBestRM(athleteId, exerciseId){
+  const recs = (db.records||[]).filter(r=>r.athleteId===athleteId && r.exerciseId===exerciseId);
+  if(!recs.length) return null;
+  let best = null;
+  recs.forEach(r=>{ const est = recEstTotal(r); if(!best || est>best.est) best = {est, date:r.date}; });
+  return best;
+}
+// Only meaningful for the RM metric — a "personal best" doesn't read the
+// same way for total volume. And never shown while trending down: no
+// historical-record comparison when the number just went down, so a bad
+// week never gets a reminder of the record it isn't hitting.
+function perfPersonalBestHintHTML(athleteId, exerciseId, points, metric){
+  if(metric!=='rm' || !points.length) return '';
+  const trend = perfTrend(points);
+  if(trend && trend.dir==='down') return '';
+  const pb = personalBestRM(athleteId, exerciseId);
+  if(!pb) return '';
+  const current = points[points.length-1].val;
+  if(current >= pb.est-0.05){
+    const ex = getExercise(exerciseId);
+    return `<div class="pb-hint gold">🏅 ¡Estás en tu mejor marca de siempre en ${esc(ex?ex.name:'este ejercicio')}!</div>`;
+  }
+  return `<div class="pb-hint">Te faltan ${(pb.est-current).toFixed(1)} kg para tu mejor marca (${pb.est.toFixed(1)} kg, ${fmtDate(pb.date)})</div>`;
 }
 // Renders the whole card (exercise picker + semana/mes/año chips + chart +
 // mejora/baja summary) for one athlete into containerId. Shared by the
@@ -1696,7 +1821,9 @@ function renderPerformanceSection(athleteId, containerId){
       <div class="toolbar mb12">
         ${['week','month','year'].map(p=>`<div class="chip ${perfPeriod===p?'active':''}" onclick="perfPeriod='${p}';renderPerformanceSection('${athleteId}','${containerId}')">${periodLabel(p)}</div>`).join('')}
       </div>
+      ${perfHeadlineHTML(points, perfPeriod)}
       ${chart || `<div class="empty" style="padding:24px 0"><div class="empty-sub">Necesitás al menos 2 ${periodLabel(perfPeriod).toLowerCase()}s con registros para ver el gráfico — probá otro período o cargá más registros.</div></div>`}
+      ${perfPersonalBestHintHTML(athleteId, perfExerciseId, points, perfMetric)}
       <div class="hr"></div>
       ${perfDeltaHTML(points, perfPeriod, perfMetric)}
     </div>
@@ -2233,7 +2360,7 @@ function renderPlayerProgressTab(){
     <div class="card mb16">
       <div class="sec-title mb8" style="font-size:14px">🕐 Progresión por ejercicio</div>
       <div class="small mb12">Cómo fue evolucionando tu peso × repeticiones en cada ejercicio, sesión a sesión.</div>
-      ${buildProgressionSectionsHTML(playerAthleteId, false)}
+      ${buildProgressionCardsHTML(playerAthleteId)}
     </div>
     <button class="cta-btn" onclick="playerTab('log')">+ Registrar sesión de hoy</button>
   `;
