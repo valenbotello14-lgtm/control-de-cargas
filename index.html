@@ -128,6 +128,22 @@ a{color:var(--ac);text-decoration:none}
 .form-row.c3{grid-template-columns:1fr 1fr 1fr}
 .form-row.c4{grid-template-columns:1fr 1fr 1fr 1fr}
 .form-hint{font-size:10.5px;color:var(--g3);margin-top:2px}
+/* ══ RIR PICKER (barra degradé táctil + link "¿Qué es el RIR?") ═ */
+.rir-q-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.rir-q{font-size:10.5px;font-weight:700;color:var(--ac);cursor:pointer;background:none;border:none;padding:0;font-family:inherit;white-space:nowrap}
+.rir-q:hover{text-decoration:underline}
+.rir-track{display:flex;justify-content:space-between;align-items:center;height:32px;border-radius:16px;background:linear-gradient(90deg,#22C55E 0%,#84CC16 25%,#F59E0B 50%,#F97316 75%,#EF4444 100%);padding:0 4px;box-shadow:inset 0 1px 3px rgba(0,0,0,.4);margin:6px 0 4px}
+.rir-tick{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:800;font-size:11.5px;color:rgba(255,255,255,.55);cursor:pointer;transition:transform .12s;flex-shrink:0}
+.rir-tick:active{transform:scale(.9)}
+.rir-tick.sel{background:#fff;color:#111;box-shadow:0 2px 10px rgba(0,0,0,.5),0 0 0 3px rgba(255,255,255,.25);transform:scale(1.14)}
+.rir-legend{display:flex;justify-content:space-between;padding:0 2px}
+.rir-legend span{font-size:8px;color:var(--g3);font-weight:600;flex:1;text-align:center}
+.rir-table-modal{border:1px solid var(--bdr);border-radius:var(--r12);overflow:hidden}
+.rir-table-row{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--bdr2)}
+.rir-table-row:last-child{border-bottom:none}
+.rir-table-num{font-family:var(--fd);font-size:20px;font-weight:800;text-align:center;border-radius:8px;padding:6px 0}
+.rir-table-label{font-weight:700;font-size:12.5px}
+.rir-table-desc{font-size:11px;color:var(--g3);margin-top:1px}
 
 /* ══ TABLE ═══════════════════════════════════════════════════ */
 .tbl-wrap{overflow-x:auto;border:1px solid var(--bdr);border-radius:var(--r12)}
@@ -450,7 +466,14 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
               <input class="form-input" type="date" id="est-date">
             </div>
           </div>
-          <div class="form-hint mb12">RIR = repeticiones en reserva (cuántas más podría haber hecho antes de fallar). Dejalo vacío si la serie fue al fallo — el RM se estima igual que antes.</div>
+          <div class="mb12">
+            <div class="rir-q-row">
+              <label class="form-label" style="margin:0">RIR de esta serie</label>
+              <button class="rir-q" onclick="openRirInfoModal()">¿Qué es el RIR?</button>
+            </div>
+            <div id="est-rir-strip"></div>
+            <div class="form-hint">Dejalo vacío si la serie fue al fallo — el RM se estima igual que antes. También podés escribir un valor exacto (0, decimales) arriba, en el campo RIR.</div>
+          </div>
           <div class="form-group mb12">
             <label class="form-label">Nota (opcional)</label>
             <input class="form-input" id="est-note" placeholder="Test inicial, RPE 9, sensaciones…">
@@ -588,6 +611,15 @@ td input.form-input,td select.form-input{padding:5px 8px;font-size:12px}
     </div>
   </div>
 
+</div>
+
+<!-- ══ RIR INFO MODAL (qué significa cada valor, 5 a 1) ══ -->
+<div class="modal-overlay" id="rir-info-modal" style="display:none" onclick="closeModal(event,'rir-info-modal')">
+<div class="modal" style="max-width:420px" onclick="event.stopPropagation()">
+  <div class="modal-hd"><div class="modal-title">¿Qué es el RIR?</div><div class="modal-close" onclick="closeModal(null,'rir-info-modal')">✕</div></div>
+  <div class="form-hint mb12">Repeticiones en reserva: cuántas más podrías haber hecho antes de fallar en esa serie.</div>
+  <div class="rir-table-modal" id="rir-info-table"></div>
+</div>
 </div>
 
 <!-- ══ PIN MODAL ══ -->
@@ -849,6 +881,38 @@ function formulaLabel(f){
 // (old data, or a straight-to-failure test) fall back to the raw reps.
 function effectiveReps(reps, rir){
   return (Number(reps)||0) + (Number(rir)||0);
+}
+
+/* ══ RIR PICKER — shared by the coach's Estimar RM and the player's
+   + Registrar ══
+   A tappable gradient strip (5→1) that fills a numeric RIR field without
+   typing, plus a "¿Qué es el RIR?" link opening the full explanation. The
+   underlying number input keeps working exactly as before (0, decimals,
+   typing) — the strip is a shortcut for the common whole-number case, not
+   a replacement for it. */
+const RIR_INFO_ROWS = [
+  {n:5, label:'Muy liviano', desc:'Te sobran 5 repeticiones — típico de un calentamiento o activación.'},
+  {n:4, label:'Cómodo', desc:'Te sobran 4 repeticiones — margen amplio, buen ritmo de acumulación.'},
+  {n:3, label:'Exigente, con margen', desc:'Te sobran 3 repeticiones — esfuerzo real pero controlado.'},
+  {n:2, label:'Cerca del límite', desc:'Te sobran 2 repeticiones — así se trabaja la mayoría de la fuerza.'},
+  {n:1, label:'Casi al fallo', desc:'Te sobra 1 repetición — la siguiente ya comprometería la técnica.'},
+];
+function openRirInfoModal(){
+  document.getElementById('rir-info-table').innerHTML = RIR_INFO_ROWS.map(r=>`<div class="rir-table-row">
+    <div class="rir-table-num" style="background:${RIR_TICK_BG[r.n]};color:${RIR_TICK_FG[r.n]}">${r.n}</div>
+    <div><div class="rir-table-label">${r.label}</div><div class="rir-table-desc">${r.desc}</div></div>
+  </div>`).join('');
+  document.getElementById('rir-info-modal').style.display = 'flex';
+}
+const RIR_TICK_BG = {5:'rgba(34,197,94,.14)', 4:'rgba(132,204,22,.14)', 3:'rgba(245,158,11,.14)', 2:'rgba(249,115,22,.14)', 1:'rgba(239,68,68,.14)'};
+const RIR_TICK_FG = {5:'#22C55E', 4:'#84CC16', 3:'#F59E0B', 2:'#F97316', 1:'#EF4444'};
+// selectedVal: current field value (string/number/''); onTapFor(v) returns the
+// onclick JS expression string for tapping tick v (e.g. "setEstRir(3)").
+function rirTrackHTML(selectedVal, onTapFor){
+  const sel = selectedVal===''||selectedVal==null ? null : Number(selectedVal);
+  return `<div class="rir-track">${[5,4,3,2,1].map(v=>
+    `<div class="rir-tick${sel===v?' sel':''}" onclick="${onTapFor(v)}">${v}</div>`
+  ).join('')}</div>`;
 }
 function getExercise(id){ return (db.exercises||[]).find(e=>e.id===id); }
 function getAthlete(id){ return (db.athletes||[]).find(a=>a.id===id); }
@@ -1604,6 +1668,14 @@ function renderEstimatePanel(){
   document.getElementById('est-note').value = '';
   updateEstimate();
 }
+function renderEstRirStrip(){
+  const el = document.getElementById('est-rir-strip');
+  if(el) el.innerHTML = rirTrackHTML(document.getElementById('est-rir').value, v=>`setEstRir(${v})`);
+}
+function setEstRir(v){
+  document.getElementById('est-rir').value = v;
+  updateEstimate();
+}
 function updateEstimate(){
   const athId = document.getElementById('est-athlete').value;
   const exId = document.getElementById('est-exercise').value;
@@ -1613,6 +1685,7 @@ function updateEstimate(){
   const w = Number(document.getElementById('est-weight').value);
   const r = Number(document.getElementById('est-reps').value);
   const rir = document.getElementById('est-rir').value;
+  renderEstRirStrip();
   const resNum = document.getElementById('est-result-num');
   const resNote = document.getElementById('est-formula-note');
   if(!w || !r || r<1){ resNum.textContent = '—'; resNote.textContent=''; return; }
@@ -2216,7 +2289,10 @@ function renderPlayerLogTab(){
           <input class="form-input" type="date" id="plog-date">
         </div>
       </div>
-      <div class="form-hint mb12">RIR = repeticiones en reserva: cuántas más podrías haber hecho antes de fallar (0 = fuiste al fallo). Dejalo vacío si no lo sabés.</div>
+      <div class="rir-q-row" style="margin-bottom:6px">
+        <div class="form-hint" style="margin:0">Repeticiones en reserva de cada serie (0 = fuiste al fallo). Dejalo vacío si no lo sabés.</div>
+        <button class="rir-q" onclick="openRirInfoModal()">¿Qué es el RIR?</button>
+      </div>
       <div class="form-hint mb12" id="plog-unit-hint"></div>
       <div id="plog-sets-wrap"></div>
       <button class="btn btn-ghost btn-sm mb16" onclick="addPlogSetRow()">+ Agregar serie</button>
@@ -2247,6 +2323,7 @@ function plogSetRowHTML(idx, row){
     <div class="form-group">${idx===0?'<label class="form-label">RIR</label>':''}<input class="form-input" type="number" min="0" max="5" step="0.5" value="${esc(row.rir)}" placeholder="2" oninput="updatePlogRow(${idx},'rir',this.value)"></div>
     <button class="btn btn-ghost btn-sm" onclick="removePlogSetRow(${idx})" title="Quitar serie" ${plogSets.length<=1?'disabled':''}>✕</button>
   </div>
+  ${rirTrackHTML(row.rir, v=>`setPlogRir(${idx},${v})`)}
   <div class="small" id="plog-row-est-${idx}" style="margin:0 0 8px;color:var(--g3)">&nbsp;</div>`;
 }
 function renderPlogSetsWrap(){
@@ -2263,6 +2340,12 @@ function updatePlogRow(idx, field, val){
   plogSets[idx][field] = val;
   updatePlogRowEstimate(idx);
   updatePlogSummary();
+}
+// Tapping a tick on a set's RIR strip — re-renders the whole sets list so
+// the number input, the strip's highlight and the estimate all stay in sync.
+function setPlogRir(idx, v){
+  plogSets[idx].rir = v;
+  renderPlogSetsWrap();
 }
 function updatePlogRowEstimate(idx){
   const row = plogSets[idx]; const el = document.getElementById('plog-row-est-'+idx);
